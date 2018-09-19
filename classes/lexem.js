@@ -1,21 +1,22 @@
 /**
  * importação das dependências da classe
  */
-const fs = require("fs");
+const fs = require('fs');
 
-const Token = require("./token");
-const Symbols = require("./symbols");
+const Token = require('./token');
+const Symbols = require('./symbols');
 
 /**
  * classe que
  * @param {string} filepath
  */
 const Lexem = function (filepath) {
+
   /**
    * verifica se foi passado um arquivo e se o mesmo existe
    */
   if (!filepath || !fs.existsSync(filepath))
-    throw new Error("é necessário informar o nome do arquivo");
+    throw new Error('é necessário informar o nome do arquivo');
 
   /**
    * define o ponto de iteração do loop de leitura dos caracteres do arquivo
@@ -35,7 +36,7 @@ const Lexem = function (filepath) {
   this.file = fs
     .readFileSync(filepath)
     .toString()
-    .split("");
+    .split('');
 
   this.throw = message => {
     console.error(`[Erro léxico]: ${message} \n`);
@@ -52,77 +53,119 @@ const Lexem = function (filepath) {
 
     while (!0) {
 
-      if (this.file.length == 0) {
-        
+      if (this.file.length == 0)
         return new Token(symbols.list.END_OF_FILE, this.row, this.col);
-      
-      } else {
-
+      else {
         this.buffer++;
-        c = this.file[0];
-      
+        c = this.file.shift();
       }
 
       switch (state) {
         case 0:
-          // caracteres que devem ser ignorados
-          if (c === " " || c === "\n" || c === "\r") {
+
+          /**
+           * caracteres que devem ser ignorados
+           */
+          if (c === ' ' || c === '\r') {
             state = 0;
+            this.col++;
           }
-          //
-          else if (c === "\t") {
-            return (col += 3);
-          } else if (typeof c === "string") {
+          /**
+           * adiciona uma linha
+           */
+          else if (c === '\n') {
+            state = 0;
+            this.row++;
+            this.col = 1;
+          }
+
+          /**
+           * se tiver tabulação, aumente 3 nas colunas
+           */
+          else if (c === '\t') {
+            state = 0;
+            this.col += 3;
+          }
+          /**
+           * é um carater
+           */
+          else if (/[a-zA-Z]/.test(c)) {
             state = 26;
-          } else if (c === "*") {
-            //estado 1
+          }
+          /**
+           * multiplicação
+           */
+          else if (c === '*') {
             state = 0;
             this.col++;
             return new Token(symbols.list.MULTIPLICACAO, row, col);
-          } else if (c === "+") {
-            //estado 2
+          }
+          /**
+           * soma
+           */
+          else if (c === '+') {
             state = 0;
             this.col++;
             return new Token(symbols.list.SOMA, row, col);
-          } else if (c === "-") {
-            //estado 3
+          }
+          /**
+           * subtração
+           */
+          else if (c === '-') {
             state = 0;
             this.col++;
             return new Token(symbols.list.SUBTRACAO, row, col);
-          } else if (c === "=") {
-            //estado 4
+          }
+          /**
+           * igualdade
+           */
+          else if (c === '=') {
             state = 0;
             this.col++;
             return new Token(symbols.list.IGUAL, row, col);
-          } else if (c === "(") {
-            //estado 5
+          }
+          /**
+           * abre parenteses
+           */
+          else if (c === '(') {
             state = 0;
             this.col++;
             return new Token(symbols.list.ABRE_PARENTESES, row, col);
-          } else if (c === ")") {
-            //estado 6
+          }
+          /**
+           * fecha parenteses
+           */
+          else if (c === ')') {
             state = 0;
             this.col++;
             return new Token(symbols.list.FECHA_PARENTESES, row, col);
-          } else if (c === '"') {
+          } 
+          /**
+           * ve se é aspas duplas
+           */
+          else if (c === '"') {
             state = 8;
-          } else if (c === ",") {
+          } 
+          /**
+           * 
+           */
+          else if (c === ',') {
             //estado 10
             state = 0;
             this.col++;
             return new Token(symbols.list.VIRGULA, row, col);
-          } else if (c === ";") {
+          } else if (c === ';') {
             //estado 11
             state = 0;
             this.col++;
             return new Token(symbols.list.PONTO_VIRGULA, row, col);
-          } else if (c === ">") {
+          } else if (c === '>') {
             state = 12;
-          } else if (c === "<") {
+          } else if (c === '<') {
             state = 16;
-          } else if (typeof c === "number") {
+          } else if (typeof c === 'number') {
             state = 21;
-          } else if (c === "/") {
+          } else if (c === '/') {
             state = 28;
           }
           break;
@@ -130,7 +173,7 @@ const Lexem = function (filepath) {
           ///
           break;
         case 12:
-          if (c === "=") {
+          if (c === '=') {
             state = 0;
             this.col++;
             return new Token(symbols.list.MAIOR_IGUAL_QUE, row, col);
