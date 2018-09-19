@@ -10,7 +10,7 @@ const Symbols = require("./symbols");
  * classe que
  * @param {string} filepath
  */
-const Lexem = function(filepath) {
+const Lexem = function (filepath) {
   /**
    * verifica se foi passado um arquivo e se o mesmo existe
    */
@@ -20,12 +20,14 @@ const Lexem = function(filepath) {
   /**
    * define o ponto de iteração do loop de leitura dos caracteres do arquivo
    */
-  buffer = 0;
+  this.buffer = 0;
+  this.col = 1;
+  this.row = 1;
 
   /**
    * armazena o último caracter lido no arquivo
    */
-  lookahead = 0;
+  this.this.lookahead = 0;
 
   /**
    * leitura do arquivo após a criação da classe
@@ -44,6 +46,7 @@ const Lexem = function(filepath) {
    * retorna o próximo token
    */
   this.next = end => {
+
     let state = 0;
     let symbols = new Symbols();
     let c = undefined;
@@ -52,90 +55,101 @@ const Lexem = function(filepath) {
       if (!!end) process.exit(0);
 
       try {
-        lookahead = this.file.indexOf(this.file[buffer]);
-        buffer++;
+        this.this.lookahead = this.file.indexOf(this.file[this.buffer]);
+        this.buffer++;
 
-        if (lookahead != END_OF_FILE) c = lookahead;
+        if (this.this.lookahead != END_OF_FILE) c = this.this.lookahead;
       } catch (e) {
         return "Erro ao ler arquivo!!!";
       }
 
       switch (state) {
         case 0:
-          if (lookahead == END_OF_FILE) {
+          // fim de arquivo
+          if (this.this.lookahead == END_OF_FILE) {
             return new Token(symbols.list.END_OF_FILE, row, col);
-          } else if (c === " " || c === "\n" || c === "\r") {
+          }
+          // caracteres que devem ser ignorados
+          else if (c === " " || c === "\n" || c === "\r") {
             state = 0;
-          } else if (c === "\t") {
-            buffer--;
+          }
+          // 
+          else if (c === "\t") {
+            this.buffer--;
             return "\t\t\t";
-          } else if(typeof c === "string") {
+          } else if (typeof c === "string") {
             state = 26;
-          }else if (c === "*") {
-            buffer--;
+          } else if (c === "*") {
+            this.buffer--;
             //estado 1
             return new Token(symbols.list.MULTIPLICACAO, row, col);
           } else if (c === "+") {
-            buffer--;
+            this.buffer--;
             //estado 2
             return new Token(symbols.list.SOMA, row, col);
           } else if (c === "-") {
-            buffer--;
+            this.buffer--;
             //estado 3
             return new Token(symbols.list.SUBTRACAO, row, col);
           } else if (c === "=") {
-            buffer--;
+            this.buffer--;
             //estado 4
             return new Token(symbols.list.IGUAL, row, col);
           } else if (c === "(") {
-            buffer--;
+            this.buffer--;
             //estado 5
             return new Token(symbols.list.ABRE_PARENTESES, row, col);
           } else if (c === ")") {
-            buffer--;
+            this.buffer--;
             //estado 6
             return new Token(symbols.list.FECHA_PARENTESES, row, col);
           } else if (c === '"') {
             state = 8;
-          }else if (c === ",") {
-              buffer--;
-              //estado 10
-              return new Token(symbols.list.VIRGULA, row, col);
-          }else if (c === ";") {
-              buffer--;
-              //estado 11
-              return new Token(symbols.list.PONTO_VIRGULA, row, col);
-          }else if (c === ">"){
-              state = 13;
-          }else if(c === "<"){
-              state = 16;
-          }else if(typeof c === "number"){
-              state = 21;
-          }else if(c === "/"){
-              state = 28;
+          } else if (c === ",") {
+            this.buffer--;
+            //estado 10
+            return new Token(symbols.list.VIRGULA, row, col);
+          } else if (c === ";") {
+            this.buffer--;
+            //estado 11
+            return new Token(symbols.list.PONTO_VIRGULA, row, col);
+          } else if (c === ">") {
+            state = 12;
+          } else if (c === "<") {
+            state = 16;
+          } else if (typeof c === "number") {
+            state = 21;
+          } else if (c === "/") {
+            state = 28;
           }
           break;
-          case 8:
+        case 8:
           ///
           break;
-          case 13:
+        case 12:
           ///
-          break;
-          case 16:
-          ///
-          break;
-          case 21:
-          ///
-          break;
-          case 26:
-          ///
-          break;
-       }
-        
+          if (c === "=") {
+            this.buffer--;
+            return new Token(symbols.list.MAIOR_IGUAL_QUE, row, col);
+          } else {
 
-        }
+          }
+          break;
+        case 16:
+          ///
+          break;
+        case 21:
+          ///
+          break;
+        case 26:
+          ///
+          break;
+      }
+
+
     }
-  };
+  }
+};
 };
 
 module.exports = Lexem;
