@@ -56,7 +56,8 @@ const Lexem = function (filepath) {
             }
 
             switch (state) {
-
+                case 1:
+                    break;
             }
 
         }
