@@ -44,7 +44,8 @@ const Symbols = function () {
         DIVISAO: '/',
         MULTIPLICACAO: '*',
         SUBTRACAO: '-',
-        SOMA: '+'
+        SOMA: '+',
+        END_OF_FILE: 'EOF'
     };
 
     /**
@@ -58,7 +59,13 @@ const Symbols = function () {
      * método de retornar um token com base no lexema que for procurado
      * @param {string} lexem 
      */
-    this.get = (lexem) => this.list.hasOwnProperty(lexem) ? this.list[lexem] : null;
+    this.getToken = (lexem) => this.list.hasOwnProperty(lexem) ? this.list[lexem] : null;
+
+    /**
+     * método de retornar um lexema com base no token que for procurado
+     * @param {string} token 
+     */
+    this.getLexem = (token) => Object.keys(this.list).find(key => this.list[key] === token);
 
     /**
      * imprime a tabela de símbolos

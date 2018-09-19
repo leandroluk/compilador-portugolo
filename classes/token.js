@@ -1,6 +1,8 @@
-const Token = function (name, lexem, row, col) {
+const Symbols = require("./symbols");
 
-    this.name = name || null;
+const Token = function (lexem, row, col) {
+
+    this.name = new Symbols().getLexem(lexem);
     this.lexem = lexem || null;
     this.row = row || null;
     this.col = col || null;
