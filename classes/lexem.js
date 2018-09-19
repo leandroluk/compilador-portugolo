@@ -64,30 +64,76 @@ const Lexem = function(filepath) {
         case 0:
           if (lookahead == END_OF_FILE) {
             return new Token(symbols.list.END_OF_FILE, row, col);
-          } else if (c === " " ||c === "\n" || c === "\r") {
+          } else if (c === " " || c === "\n" || c === "\r") {
             state = 0;
-          }else if (c === "\t") {
-              buffer--;
-              return "\t\t\t"
-          } else if (c === "*") {
+          } else if (c === "\t") {
             buffer--;
+            return "\t\t\t";
+          } else if(typeof c === "string") {
+            state = 26;
+          }else if (c === "*") {
+            buffer--;
+            //estado 1
             return new Token(symbols.list.MULTIPLICACAO, row, col);
           } else if (c === "+") {
             buffer--;
+            //estado 2
             return new Token(symbols.list.SOMA, row, col);
           } else if (c === "-") {
             buffer--;
+            //estado 3
             return new Token(symbols.list.SUBTRACAO, row, col);
-          }else if (c === "=") {
+          } else if (c === "=") {
+            buffer--;
+            //estado 4
+            return new Token(symbols.list.IGUAL, row, col);
+          } else if (c === "(") {
+            buffer--;
+            //estado 5
+            return new Token(symbols.list.ABRE_PARENTESES, row, col);
+          } else if (c === ")") {
+            buffer--;
+            //estado 6
+            return new Token(symbols.list.FECHA_PARENTESES, row, col);
+          } else if (c === '"') {
+            state = 8;
+          }else if (c === ",") {
               buffer--;
-              return new Token(symbols.list.IGUAL, row, col);
-          }else if (c === "(") {
+              //estado 10
+              return new Token(symbols.list.VIRGULA, row, col);
+          }else if (c === ";") {
               buffer--;
-              return new Token(symbols.list.ABRE_PARENTESES, row, cow);
+              //estado 11
+              return new Token(symbols.list.PONTO_VIRGULA, row, col);
+          }else if (c === ">"){
+              state = 13;
+          }else if(c === "<"){
+              state = 16;
+          }else if(typeof c === "number"){
+              state = 21;
+          }else if(c === "/"){
+              state = 28;
           }
-
           break;
-      }
+          case 8:
+          ///
+          break;
+          case 13:
+          ///
+          break;
+          case 16:
+          ///
+          break;
+          case 21:
+          ///
+          break;
+          case 26:
+          ///
+          break;
+       }
+        
+
+        }
     }
   };
 };
