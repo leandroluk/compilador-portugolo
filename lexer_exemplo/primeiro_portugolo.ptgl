@@ -1,0 +1,18 @@
+algoritmo 
+	declare 
+	op literal;
+	
+	escreva("Vc prefere Goku ou Vegeta? Informe G ou V: ");
+	leia(op);
+	se(op = "G") inicio 
+	   escreva("Oi, eu sou o Goku!");
+	fim 
+	senao inicio 
+	   escreva("Seu inseto, achei que iria preferir o Kakaroto");
+	fim
+fim algoritmo 
+
+subrotina fazNada(v1 nulo)
+	escreva("Se a rotina faz nada, por que tem um comando de impressao?");
+fim subrotina
+

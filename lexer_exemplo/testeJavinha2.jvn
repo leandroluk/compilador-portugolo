@@ -1,0 +1,14 @@
+public class TesteJavinha2
+	integer res1;
+	integer res2; 
+	integer res3; 
+	integer var1; 
+	integer var2; 
+	integer var3;
+
+	res1 = var1 > var2;
+	res2 = var1 < var3;
+	res3 = res1 == res2;
+
+	SystemOutDispln(var2 != var3);
+end

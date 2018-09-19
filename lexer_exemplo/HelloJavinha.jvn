@@ -1,0 +1,7 @@
+public class HelloJavinha
+	string msgm;
+
+	msgm = "Hello World";
+
+	SystemOutDispln(msgm);
+end
