@@ -45,73 +45,76 @@ const Lexem = function (filepath) {
   /**
    * retorna o próximo token
    */
-  this.next = end => {
-
+  this.next = () => {
     let state = 0;
     let symbols = new Symbols();
     let c = undefined;
 
     while (!0) {
-      if (!!end) process.exit(0);
 
-      try {
-        this.this.lookahead = this.file.indexOf(this.file[this.buffer]);
+      if (this.file.length == 0) {
+        
+        return new Token(symbols.list.END_OF_FILE, this.row, this.col);
+      
+      } else {
+
         this.buffer++;
-
-        if (this.this.lookahead != END_OF_FILE) c = this.this.lookahead;
-      } catch (e) {
-        return "Erro ao ler arquivo!!!";
+        c = this.file[0];
+      
       }
 
       switch (state) {
         case 0:
-          // fim de arquivo
-          if (this.this.lookahead == END_OF_FILE) {
-            return new Token(symbols.list.END_OF_FILE, row, col);
-          }
           // caracteres que devem ser ignorados
-          else if (c === " " || c === "\n" || c === "\r") {
+          if (c === " " || c === "\n" || c === "\r") {
             state = 0;
           }
-          // 
+          //
           else if (c === "\t") {
-            this.buffer--;
-            return "\t\t\t";
+            return (col += 3);
           } else if (typeof c === "string") {
             state = 26;
           } else if (c === "*") {
-            this.buffer--;
             //estado 1
+            state = 0;
+            this.col++;
             return new Token(symbols.list.MULTIPLICACAO, row, col);
           } else if (c === "+") {
-            this.buffer--;
             //estado 2
+            state = 0;
+            this.col++;
             return new Token(symbols.list.SOMA, row, col);
           } else if (c === "-") {
-            this.buffer--;
             //estado 3
+            state = 0;
+            this.col++;
             return new Token(symbols.list.SUBTRACAO, row, col);
           } else if (c === "=") {
-            this.buffer--;
             //estado 4
+            state = 0;
+            this.col++;
             return new Token(symbols.list.IGUAL, row, col);
           } else if (c === "(") {
-            this.buffer--;
             //estado 5
+            state = 0;
+            this.col++;
             return new Token(symbols.list.ABRE_PARENTESES, row, col);
           } else if (c === ")") {
-            this.buffer--;
             //estado 6
+            state = 0;
+            this.col++;
             return new Token(symbols.list.FECHA_PARENTESES, row, col);
           } else if (c === '"') {
             state = 8;
           } else if (c === ",") {
-            this.buffer--;
             //estado 10
+            state = 0;
+            this.col++;
             return new Token(symbols.list.VIRGULA, row, col);
           } else if (c === ";") {
-            this.buffer--;
             //estado 11
+            state = 0;
+            this.col++;
             return new Token(symbols.list.PONTO_VIRGULA, row, col);
           } else if (c === ">") {
             state = 12;
@@ -127,12 +130,14 @@ const Lexem = function (filepath) {
           ///
           break;
         case 12:
-          ///
           if (c === "=") {
-            this.buffer--;
+            state = 0;
+            this.col++;
             return new Token(symbols.list.MAIOR_IGUAL_QUE, row, col);
           } else {
-
+            state = 0;
+            this.col++;
+            return new Token(symbols.list.MAIOR_QUE, row, col);
           }
           break;
         case 16:
@@ -145,11 +150,7 @@ const Lexem = function (filepath) {
           ///
           break;
       }
-
-
     }
-  }
+  };
 };
-};
-
 module.exports = Lexem;
