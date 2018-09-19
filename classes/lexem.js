@@ -26,22 +26,13 @@ const Lexem = function (filepath) {
   this.row = 1;
 
   /**
-   * armazena o último caracter lido no arquivo
-   */
-  this.this.lookahead = 0;
-
-  /**
    * leitura do arquivo após a criação da classe
    */
-  this.file = fs
-    .readFileSync(filepath)
-    .toString()
-    .split('');
+  this.file = fs.readFileSync(filepath).toString().split('');
 
-  this.throw = message => {
-    console.error(`[Erro léxico]: ${message} \n`);
+  this.throw = message =>
+    console.error(`[Erro léxico]: ${message} \t linha: ${this.row}, coluna: ${this.col}\n`) &&
     process.exit(1);
-  };
 
   /**
    * retorna o próximo token
@@ -53,140 +44,296 @@ const Lexem = function (filepath) {
 
     while (!0) {
 
-      if (this.file.length == 0)
+      /**
+       * verifica se chegou no final do arquivo
+       */
+      if (this.file.length == this.buffer) {
         return new Token(symbols.list.END_OF_FILE, this.row, this.col);
+      }
+      /**
+       * se não está no final do arquivo, 
+       */
       else {
+        c = this.file[this.buffer];
         this.buffer++;
-        c = this.file.shift();
       }
 
       switch (state) {
         case 0:
 
           /**
+           * q0
            * caracteres que devem ser ignorados
            */
-          if (c === ' ' || c === '\r') {
+          if (c === ' ' | c === '\r' | c === '\n' | c === '\t') {
             state = 0;
-            this.col++;
-          }
-          /**
-           * adiciona uma linha
-           */
-          else if (c === '\n') {
-            state = 0;
-            this.row++;
-            this.col = 1;
+            /**
+             * adiciona uma linha
+             */
+            if (c === '\n') {
+              this.row++;
+              this.col = 1;
+            }
+            /**
+             * se tiver tabulação, aumente 3 nas colunas
+             */
+            else if (c === '\t') {
+              state = 0;
+              this.col += 3;
+            } else {
+              this.col++;
+            }
           }
 
           /**
-           * se tiver tabulação, aumente 3 nas colunas
-           */
-          else if (c === '\t') {
-            state = 0;
-            this.col += 3;
-          }
-          /**
-           * é um carater
-           */
-          else if (/[a-zA-Z]/.test(c)) {
-            state = 26;
-          }
-          /**
+           * q1
            * multiplicação
            */
           else if (c === '*') {
             state = 0;
             this.col++;
-            return new Token(symbols.list.MULTIPLICACAO, row, col);
+            return new Token(symbols.list.MULTIPLICACAO, this.row, this.col);
           }
+
           /**
+           * q2
            * soma
            */
           else if (c === '+') {
             state = 0;
             this.col++;
-            return new Token(symbols.list.SOMA, row, col);
+            return new Token(symbols.list.SOMA, this.row, this.col);
           }
+
           /**
+           * q3
            * subtração
            */
           else if (c === '-') {
             state = 0;
             this.col++;
-            return new Token(symbols.list.SUBTRACAO, row, col);
+            return new Token(symbols.list.SUBTRACAO, this.row, this.col);
           }
+
           /**
+           * q4
            * igualdade
            */
           else if (c === '=') {
             state = 0;
             this.col++;
-            return new Token(symbols.list.IGUAL, row, col);
+            return new Token(symbols.list.IGUAL, this.row, this.col);
           }
+
           /**
+           * q5
            * abre parenteses
            */
           else if (c === '(') {
             state = 0;
             this.col++;
-            return new Token(symbols.list.ABRE_PARENTESES, row, col);
+            return new Token(symbols.list.ABRE_PARENTESES, this.row, this.col);
           }
+
           /**
+           * q6
            * fecha parenteses
            */
           else if (c === ')') {
             state = 0;
             this.col++;
-            return new Token(symbols.list.FECHA_PARENTESES, row, col);
-          } 
+            return new Token(symbols.list.FECHA_PARENTESES, this.row, this.col);
+          }
+
           /**
-           * ve se é aspas duplas
+           * q7
+           * aspas duplas
            */
           else if (c === '"') {
             state = 8;
-          } 
+          }
+
           /**
-           * 
+           * q10
+           * vírgula
            */
           else if (c === ',') {
-            //estado 10
             state = 0;
             this.col++;
-            return new Token(symbols.list.VIRGULA, row, col);
-          } else if (c === ';') {
-            //estado 11
+            return new Token(symbols.list.VIRGULA, this.row, this.col);
+          }
+
+          /**
+           * q11
+           * ponto e vírgula
+           */
+          else if (c === ';') {
             state = 0;
             this.col++;
-            return new Token(symbols.list.PONTO_VIRGULA, row, col);
-          } else if (c === '>') {
+            return new Token(symbols.list.PONTO_VIRGULA, this.row, this.col);
+          }
+
+          /**
+           * q12
+           * maior que | maior ou igual que
+           */
+          else if (c === '>') {
             state = 12;
-          } else if (c === '<') {
-            state = 16;
-          } else if (typeof c === 'number') {
+          }
+
+          /**
+           * q15
+           * menor que | menor ou igual que
+           */
+          else if (c === '<') {
+            state = 15;
+          }
+
+          /**
+           * q21
+           * digito
+           */
+          else if (/[0-9]/.test(c)) {
             state = 21;
-          } else if (c === '/') {
+          }
+
+          /**
+           * q26
+           * é um carater
+           */
+          else if (/[a-zA-Z]/.test(c)) {
+            state = 26;
+          }
+
+          /**
+           * q28
+           * divisão | comentario simples | comentario de muitas linhas
+           */
+          else if (c === '/') {
             state = 28;
           }
+
+          /**
+           * volta pro loop
+           */
           break;
+
+        /**
+         * q7 => q8
+         * aspas simples => caracter ASCII
+         */
         case 8:
-          ///
-          break;
-        case 12:
-          if (c === '=') {
+          /**
+           * tratamento para quebra de linha após uma aspas duplas
+           */
+          if (c === '\n') {
+            this.throw('Não é permitido quebra de linha após uma aspas duplas');
+          }
+
+          /**
+           * se o caracter for válido continue...
+           */
+          this.col++;
+
+          /**
+           * q9
+           * se for outra aspas finaliza
+           */
+          if (c === '"') {
             state = 0;
-            this.col++;
-            return new Token(symbols.list.MAIOR_IGUAL_QUE, row, col);
+            return new Token(symbols.list.LITERAL, this.row, this.col);
+          }
+
+          /**
+           * volta pro loop
+           */
+          break;
+
+        /**
+         * q0 => q12
+         * tratamento iniciando com "maior que"
+         */
+        case 12:
+          state = 0;
+          this.col++;
+          /**
+           * q14
+           * maior ou igual que
+           */
+          if (c === '=') {
+            return new Token(symbols.list.MAIOR_IGUAL_QUE, this.row, this.col);
+          }
+          /**
+           * q13
+           * outro
+           */
+          else {
+            return new Token(symbols.list.MAIOR_QUE, this.row, this.col);
+          }
+        /**
+         * q0 => q11
+         * tratamento iniciando com "menor que"
+         */
+        case 15:
+          /**
+           * q19
+           * inicio de verificacao para atribuicao
+           */
+          if (c === '-') {
+            state = 19;
           } else {
             state = 0;
             this.col++;
-            return new Token(symbols.list.MAIOR_QUE, row, col);
+            /**
+             * q16
+             * diferente que
+             */
+            if (c === '>') {
+              return new Token(symbols.list.DIFERENTE, this.row, this.col);
+            }
+            /**
+             * q18
+             * maior ou igual que
+             */
+            else if (c === '=') {
+              return new Token(symbols.list.MAIOR_IGUAL_QUE, this.row, this.col);
+            }
+            /**
+             * q17
+             * menor que
+             */
+            else {
+              return new Token(symbols.list.MENOR_QUE, this.row, this.col);
+            }
           }
           break;
-        case 16:
-          ///
+        /**
+         * q15 => q19
+         * segunda verificacao para atribuição
+         */
+        case 19:
+          /**
+           * caso seja uma atribuição
+           */
+          if (c == '-') {
+            state = 0;
+            this.col++;
+            return new Token(symbols.list.ATRIBUI, this.row, this.col);
+          }
+          /**
+           * q20
+           * se não for uma atribuição mostre erro
+           */
+          else {
+            this.throw('Era esperado um símbolo de menor que para criar uma atribuição de variável')
+          }
           break;
+        /**
+         * q0 => q21
+         * verificao se é digito
+         */
         case 21:
+          
           ///
           break;
         case 26:
