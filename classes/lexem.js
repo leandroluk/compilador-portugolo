@@ -42,7 +42,7 @@ const Lexem = function (filepath) {
     let symbols = new Symbols();
     let c = null;
     let temp = '';
-
+    debugger;
     while (!0) {
 
       /**
@@ -157,7 +157,6 @@ const Lexem = function (filepath) {
            */
           else if (c === '"') {
             state = 8;
-            this.col++;
           }
 
           /**
@@ -186,7 +185,6 @@ const Lexem = function (filepath) {
            */
           else if (c === '>') {
             state = 12;
-            this.col++;
           }
 
           /**
@@ -195,7 +193,6 @@ const Lexem = function (filepath) {
            */
           else if (c === '<') {
             state = 15;
-            this.col++;
           }
 
           /**
@@ -205,7 +202,6 @@ const Lexem = function (filepath) {
           else if (/[0-9]/.test(c)) {
             state = 21;
             temp += c;
-            this.col++;
           }
 
           /**
@@ -215,7 +211,6 @@ const Lexem = function (filepath) {
           else if (/[a-zA-Z]/.test(c)) {
             state = 26;
             temp += c;
-            this.col++;
           }
 
           /**
@@ -224,7 +219,6 @@ const Lexem = function (filepath) {
            */
           else if (c === '/') {
             state = 28;
-            this.col++;
           }
 
           /**
@@ -248,11 +242,11 @@ const Lexem = function (filepath) {
 
           /**
            * q9
-           * se for outra aspas finaliza
+           * se for outra aspas retorna erro por não aceitar string vazia
            */
           if (c === '"') {
-            state = 0;
-            return new Token(symbols.list.LITERAL, this.row, this.col);
+            this.col++;
+            return `A ligagem não aceita Strings vazias na linha ${this.row} e na coluna ${this.col}`;
           }
           /**
            * se não for um caracter ASCII tem que dar pau
@@ -278,6 +272,7 @@ const Lexem = function (filepath) {
            * maior ou igual que
            */
           if (c === '=') {
+            this.col++;
             return new Token(symbols.list.MAIOR_IGUAL_QUE, this.row, this.col);
           }
           /**
@@ -306,6 +301,7 @@ const Lexem = function (filepath) {
              * diferente que
              */
             if (c === '>') {
+              this.col++;
               return new Token(symbols.list.DIFERENTE, this.row, this.col);
             }
             /**
@@ -313,6 +309,7 @@ const Lexem = function (filepath) {
              * maior ou igual que
              */
             else if (c === '=') {
+              this.col++;
               return new Token(symbols.list.MAIOR_IGUAL_QUE, this.row, this.col);
             }
             /**
@@ -364,7 +361,7 @@ const Lexem = function (filepath) {
            * q25
            * caso seja  qualquer coisa diferente de numero
            */
-          else if (!/[0-9]/.test()) {
+          else if (!/[0-9]/.test(c)) {
             state = 0;
             let n = new Token(symbols.list.NUMERICO, this.row, this.col);
             n.lexem = temp;
@@ -379,7 +376,7 @@ const Lexem = function (filepath) {
           this.col++;
           temp += c;
 
-          if (!/[0-9]/.test()) {
+          if (!/[0-9]/.test(c)) {
             this.throw("O caracter encontrado não é do tipo NUMERICO")
           }
 
@@ -396,13 +393,13 @@ const Lexem = function (filepath) {
            * segunda parte do ponto
            */
         case 23:
-          this.col++;
+          
           temp += c;
 
           /**
            * q24
            */
-          if (!/[0-9]/.test()) {
+          if (!/[0-9]/.test(c)) {
             state = 0;
             let n = new Token(symbols.list.NUMERICO, this.row, this.col);
             n.lexem = temp;
@@ -418,12 +415,12 @@ const Lexem = function (filepath) {
         case 26:
           this.col++;
           temp += c;
-
+          
           /**
            * q27
            * retorna ou uma palavra reservada KW ou um ID
            */
-          if (!/[a-zA-Z0-9]/.test()) {
+          if (!/[a-zA-Z0-9]/.test(c)) {
             state = 0;
             let n = new Token(null, this.row, this.col);
             n.name = !!symbols.getLexem(temp) ? "KW" : "ID";
@@ -471,6 +468,7 @@ const Lexem = function (filepath) {
            * acaba o comentario e volta pro inicio
            */
           if (c === '\n') {
+            this.row++;
             state = 0;
           }
           /**
@@ -478,7 +476,7 @@ const Lexem = function (filepath) {
            * da linguagem
            */
           else if (c === '\t') {
-            this.col += 2;
+            this.col += 3;
           }
           /**
            * se não for ASCII te que dar pau
@@ -496,7 +494,7 @@ const Lexem = function (filepath) {
            * se for tabulação tem que respeitar a linguagem
            */
           if (c === '\t') {
-            this.col += 2;
+            this.col += 3;
           }
           /**
            * q32
@@ -521,6 +519,7 @@ const Lexem = function (filepath) {
            * caso finalize o comentario volte ao inicio
            */
           if (c === '/') {
+            this.col++;
             state = 0;
           }
           /**
