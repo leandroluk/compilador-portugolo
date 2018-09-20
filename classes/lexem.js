@@ -487,6 +487,9 @@ const Lexem = function (filepath) {
             this.throw('O caracter não é um ASCII válido');
           }
           break;
+          /**
+           * {q28, q32} => q31
+           */
         case 31:
           this.col++;
           /**
@@ -506,6 +509,32 @@ const Lexem = function (filepath) {
            * se não for ASCII tem que dar pau
            */
           else if (!/[\x00-\x7F]/.test(c)) {
+            this.throw('O caracter não é um ASCII válido');
+          }
+          break;
+          /**
+           * q31 => q32
+           */
+        case 32:
+          this.col++;
+          /**
+           * caso finalize o comentario volte ao inicio
+           */
+          if (c === '/') {
+            state = 0;
+          }
+          /**
+           * caso seja um ASCII valido veja se volta para 31
+           */
+          else if (/[\x00-\x7F]/.test(c)) {
+            if (c !== '*') {
+              state = 31;
+            }
+          }
+          /**
+           * caso não seja um ASCII valido tem que dar pau
+           */
+          else {
             this.throw('O caracter não é um ASCII válido');
           }
           break;
