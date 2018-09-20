@@ -40,7 +40,8 @@ const Lexem = function (filepath) {
   this.next = () => {
     let state = 0;
     let symbols = new Symbols();
-    let c = undefined;
+    let c = null;
+    let temp = '';
 
     while (!0) {
 
@@ -60,6 +61,8 @@ const Lexem = function (filepath) {
 
       switch (state) {
         case 0:
+
+          temp = '';
 
           /**
            * q0
@@ -201,6 +204,7 @@ const Lexem = function (filepath) {
            */
           else if (/[0-9]/.test(c)) {
             state = 21;
+            temp += c;
             this.col++;
           }
 
@@ -210,6 +214,7 @@ const Lexem = function (filepath) {
            */
           else if (/[a-zA-Z]/.test(c)) {
             state = 26;
+            temp += c;
             this.col++;
           }
 
@@ -227,19 +232,19 @@ const Lexem = function (filepath) {
            */
           break;
 
-        /**
-         * q7 => q8
-         * aspas simples => caracter ASCII
-         */
+          /**
+           * q7 => q8
+           * aspas simples => caracter ASCII
+           */
         case 8:
+          this.col++;
+
           /**
            * tratamento para quebra de linha após uma aspas duplas
            */
           if (c === '\n') {
             this.throw('Não é permitido quebra de linha após uma aspas duplas');
           }
-
-          this.col++;
 
           /**
            * q9
@@ -249,16 +254,22 @@ const Lexem = function (filepath) {
             state = 0;
             return new Token(symbols.list.LITERAL, this.row, this.col);
           }
+          /**
+           * se não for um caracter ASCII tem que dar pau
+           */
+          else if (!/[\x00-\x7F]/.test(c)) {
+            this.throw('o caracter informado não é um caracter ASCII válido');
+          }
 
           /**
            * volta pro loop
            */
           break;
 
-        /**
-         * q0 => q12
-         * tratamento iniciando com "maior que"
-         */
+          /**
+           * q0 => q12
+           * tratamento iniciando com "maior que"
+           */
         case 12:
           this.col++;
           state = 0;
@@ -276,10 +287,10 @@ const Lexem = function (filepath) {
           else {
             return new Token(symbols.list.MAIOR_QUE, this.row, this.col);
           }
-        /**
-         * q0 => q11
-         * tratamento iniciando com "menor que"
-         */
+          /**
+           * q0 => q11
+           * tratamento iniciando com "menor que"
+           */
         case 15:
           this.col++;
           /**
@@ -313,11 +324,12 @@ const Lexem = function (filepath) {
             }
           }
           break;
-        /**
-         * q15 => q19
-         * segunda verificacao para atribuição
-         */
+          /**
+           * q15 => q19
+           * segunda verificacao para atribuição
+           */
         case 19:
+          this.col++;
 
           /**
            * caso nao seja uma atribuição
@@ -330,19 +342,18 @@ const Lexem = function (filepath) {
            * q20
            * se não for uma atribuição mostre erro
            */
-          this.col++;
           state = 0;
           return new Token(symbols.list.ATRIBUI, this.row, this.col);
 
-        /**
-         * q0 => q21
-         * verificao se é digito
-         */
-        case 21:
-
-          this.col++;
-
           /**
+           * q0 => q21
+           * verificao se é digito
+           */
+        case 21:
+          this.col++;
+          temp += c;
+          /**
+           * q22
            * caso seja ponto 
            */
           if (c === '.') {
@@ -350,15 +361,153 @@ const Lexem = function (filepath) {
           }
 
           /**
+           * q25
            * caso seja  qualquer coisa diferente de numero
            */
           else if (!/[0-9]/.test()) {
-            return new Token(symbols.list.NUMERICO, this.row, this.col);
+            state = 0;
+            let n = new Token(symbols.list.NUMERICO, this.row, this.col);
+            n.lexem = temp;
+            return n;
           }
           break;
-          
+
+          /**
+           * q21 => q22
+           */
+        case 22:
+          this.col++;
+          temp += c;
+
+          if (!/[0-9]/.test()) {
+            this.throw("O caracter encontrado não é do tipo NUMERICO")
+          }
+
+          /**
+           * q23
+           * segunda parte do ponto flutuante
+           */
+          state = 23;
+
+          break;
+
+          /**
+           * q22 => q23
+           * segunda parte do ponto
+           */
+        case 23:
+          this.col++;
+          temp += c;
+
+          /**
+           * q24
+           */
+          if (!/[0-9]/.test()) {
+            state = 0;
+            let n = new Token(symbols.list.NUMERICO, this.row, this.col);
+            n.lexem = temp;
+            return n;
+          }
+
+          break;
+
+          /**
+           * q0 => q26
+           * literal
+           */
         case 26:
-          ///
+          this.col++;
+          temp += c;
+
+          /**
+           * q27
+           * retorna ou uma palavra reservada KW ou um ID
+           */
+          if (!/[a-zA-Z0-9]/.test()) {
+            state = 0;
+            let n = new Token(null, this.row, this.col);
+            n.name = !!symbols.getLexem(temp) ? "KW" : "ID";
+            n.lexem = temp;
+            return n;
+          }
+
+          break;
+          /**
+           * q0 => q28
+           */
+        case 28:
+          this.col++;
+          /**
+           * q30
+           * comentario de 1 linha
+           */
+          if (c === '/') {
+            state = 30;
+          }
+          /**
+           * q31
+           * comentario de múltiplas linhas
+           */
+          else if (c === '*') {
+            state = 31;
+          }
+          /**
+           * q29
+           * divisão
+           */
+          else {
+            state = 0;
+            return new Token(symbols.list.DIVISAO, this.row, this.col);
+          }
+          break;
+          /**
+           * q28 => q30
+           * leitura de qualquer caracter no comentario de 1 linha
+           */
+        case 30:
+          this.col++;
+          /**
+           * q0
+           * acaba o comentario e volta pro inicio
+           */
+          if (c === '\n') {
+            state = 0;
+          }
+          /**
+           * caso use uma tabulação dentro dos comentarios deve-se respeitar a regra
+           * da linguagem
+           */
+          else if (c === '\t') {
+            this.col += 2;
+          }
+          /**
+           * se não for ASCII te que dar pau
+           */
+          else if (!/[\x00-\x7F]/.test(c)) {
+            this.throw('O caracter não é um ASCII válido');
+          }
+          break;
+        case 31:
+          this.col++;
+          /**
+           * se for tabulação tem que respeitar a linguagem
+           */
+          if (c === '\t') {
+            this.col += 2;
+          }
+          /**
+           * q32
+           * possivel finalizacao
+           */
+          else if (c === '*') {
+            state = 32;
+          }
+          /**
+           * se não for ASCII tem que dar pau
+           */
+          else if (!/[\x00-\x7F]/.test(c)) {
+            this.throw('O caracter não é um ASCII válido');
+          }
           break;
       }
     }

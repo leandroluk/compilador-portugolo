@@ -45,7 +45,7 @@ const Symbols = function () {
         MULTIPLICACAO: '*',
         SUBTRACAO: '-',
         SOMA: '+',
-        END_OF_FILE: 'EOF'
+        END_OF_FILE: 'EOF',
     };
 
     /**
