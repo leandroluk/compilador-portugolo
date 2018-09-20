@@ -78,9 +78,12 @@ const Lexem = function (filepath) {
              * se tiver tabulação, aumente 3 nas colunas
              */
             else if (c === '\t') {
-              state = 0;
               this.col += 3;
-            } else {
+            }
+            /**
+             * se for espaço ou \r
+             */
+            else {
               this.col++;
             }
           }
@@ -151,6 +154,7 @@ const Lexem = function (filepath) {
            */
           else if (c === '"') {
             state = 8;
+            this.col++;
           }
 
           /**
@@ -179,6 +183,7 @@ const Lexem = function (filepath) {
            */
           else if (c === '>') {
             state = 12;
+            this.col++;
           }
 
           /**
@@ -187,6 +192,7 @@ const Lexem = function (filepath) {
            */
           else if (c === '<') {
             state = 15;
+            this.col++;
           }
 
           /**
@@ -195,6 +201,7 @@ const Lexem = function (filepath) {
            */
           else if (/[0-9]/.test(c)) {
             state = 21;
+            this.col++;
           }
 
           /**
@@ -203,6 +210,7 @@ const Lexem = function (filepath) {
            */
           else if (/[a-zA-Z]/.test(c)) {
             state = 26;
+            this.col++;
           }
 
           /**
@@ -211,6 +219,7 @@ const Lexem = function (filepath) {
            */
           else if (c === '/') {
             state = 28;
+            this.col++;
           }
 
           /**
@@ -230,9 +239,6 @@ const Lexem = function (filepath) {
             this.throw('Não é permitido quebra de linha após uma aspas duplas');
           }
 
-          /**
-           * se o caracter for válido continue...
-           */
           this.col++;
 
           /**
@@ -254,8 +260,8 @@ const Lexem = function (filepath) {
          * tratamento iniciando com "maior que"
          */
         case 12:
-          state = 0;
           this.col++;
+          state = 0;
           /**
            * q14
            * maior ou igual que
@@ -275,6 +281,7 @@ const Lexem = function (filepath) {
          * tratamento iniciando com "menor que"
          */
         case 15:
+          this.col++;
           /**
            * q19
            * inicio de verificacao para atribuicao
@@ -283,7 +290,6 @@ const Lexem = function (filepath) {
             state = 19;
           } else {
             state = 0;
-            this.col++;
             /**
              * q16
              * diferente que
@@ -312,30 +318,45 @@ const Lexem = function (filepath) {
          * segunda verificacao para atribuição
          */
         case 19:
+
           /**
-           * caso seja uma atribuição
+           * caso nao seja uma atribuição
            */
-          if (c == '-') {
-            state = 0;
-            this.col++;
-            return new Token(symbols.list.ATRIBUI, this.row, this.col);
+          if (c !== '-') {
+            this.throw('Era esperado um símbolo de menor que para criar uma atribuição de variável');
           }
+
           /**
            * q20
            * se não for uma atribuição mostre erro
            */
-          else {
-            this.throw('Era esperado um símbolo de menor que para criar uma atribuição de variável')
-          }
-          break;
+          this.col++;
+          state = 0;
+          return new Token(symbols.list.ATRIBUI, this.row, this.col);
+
         /**
          * q0 => q21
          * verificao se é digito
          */
         case 21:
-          
-          ///
+
+          this.col++;
+
+          /**
+           * caso seja ponto 
+           */
+          if (c === '.') {
+            state = 22;
+          }
+
+          /**
+           * caso seja  qualquer coisa diferente de numero
+           */
+          else if (!/[0-9]/.test()) {
+            return new Token(symbols.list.NUMERICO, this.row, this.col);
+          }
           break;
+          
         case 26:
           ///
           break;
