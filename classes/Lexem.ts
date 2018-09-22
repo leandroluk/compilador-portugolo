@@ -1,7 +1,11 @@
-import fs from 'fs';
+import * as fs from 'fs';
 
 import { Token } from './token';
 import { Symbols } from './symbols';
+
+export enum errList {
+  QUEBRA_LINHA_DEPOIS_DE_ASPAS_DULPAS = 'Não é permitido quebra de linha após uma aspas duplas',
+}
 
 /**
  * classe que faz a validação léxica
@@ -15,20 +19,16 @@ export class Lexem {
   private _row: number;
   private _filepath: string;
   private _file: string[];
+  private _isFileValid: boolean;
   private _isValid: boolean;
 
-  constructor(filepath: string) {
-
+  constructor(file?: string) {
     this._buffer = 0;
     this._col = 1;
     this._row = 1;
+    this._isFileValid = true;
     this._isValid = true;
-
-    if (!fs.existsSync(filepath))
-      this.throw('');
-
-    this.file = fs.readFileSync(filepath).toString().split('');
-
+    this._file = file.split('');
   }
 
   // getters & setters
@@ -52,6 +52,9 @@ export class Lexem {
   public set col(v: number) { this._col = v; }
 
   public get isValid(): boolean { return this._isValid; }
+
+  public get isFileValid(): boolean { return this._isFileValid; }
+
 
   // method's
 
@@ -280,7 +283,7 @@ export class Lexem {
            * tratamento para quebra de linha após uma aspas duplas
            */
           if (c === '\n') {
-            this.throw('Não é permitido quebra de linha após uma aspas duplas');
+            this.throw(errList.QUEBRA_LINHA_DEPOIS_DE_ASPAS_DULPAS);
           }
 
           /**

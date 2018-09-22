@@ -1,4 +1,4 @@
-import { Symbols } from './Symbols';
+import { Symbols } from './symbols';
 
 export class Token {
 

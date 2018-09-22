@@ -1,4 +1,4 @@
-import { Symbols } from '../classes/symbols';
+import { Symbols } from './symbols';
 
 // cria uma instancia da classe
 let s = new Symbols();
