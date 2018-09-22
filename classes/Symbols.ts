@@ -26,8 +26,9 @@ export class Symbols {
      * @param {string} lexem 
      * @param {string} word 
      */
-    public put(lexem: string, word: string): void {
+    public put(lexem: string, word: string): boolean {
         this.list[lexem] = word;
+        return this.list[lexem] === word;
     }
 
     /**
@@ -52,7 +53,7 @@ export class Symbols {
     /**
      * imprime a tabela de símbolos
      */
-    public print(): string {
+    public toString(): string {
         return Object.keys(this.list)
             .map((key, index) => `posição ${index}: \t ${key}: "${this.list[key]}" \n`)
             .join('');

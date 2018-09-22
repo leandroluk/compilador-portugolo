@@ -8,7 +8,7 @@ import { Lexem } from './lexem';
 
 describe('Lexem.ts', () => {
 
-    it('verifica se é possível fazer a leitura de um arquivo', () => {
+    it('fazer a leitura de um arquivo', () => {
         const file = fs.readFileSync(path.join(__dirname, '..', 'teste.txt')).toString();
         const result = new Lexem(file);
         expect(result.file).is.not.empty;

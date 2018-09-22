@@ -32,7 +32,7 @@ export class Token {
     /**
      * imprime o token
      */
-    public print(): string {
+    public toString(): string {
         return `<${this.name}, "${this.lexem}">`;
     }
 

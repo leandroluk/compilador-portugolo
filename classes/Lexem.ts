@@ -3,10 +3,6 @@ import * as fs from 'fs';
 import { Token } from './token';
 import { Symbols } from './symbols';
 
-export enum errList {
-  QUEBRA_LINHA_DEPOIS_DE_ASPAS_DULPAS = 'Não é permitido quebra de linha após uma aspas duplas',
-}
-
 /**
  * classe que faz a validação léxica
  * @param {string} filepath
@@ -283,7 +279,7 @@ export class Lexem {
            * tratamento para quebra de linha após uma aspas duplas
            */
           if (c === '\n') {
-            this.throw(errList.QUEBRA_LINHA_DEPOIS_DE_ASPAS_DULPAS);
+            this.throw('Não é permitido quebra de linha após uma aspas duplas');
           }
 
           /**
