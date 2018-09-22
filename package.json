@@ -4,14 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test:lexem": "node tests/test-lexem.js",
-    "test:symbols": "node tests/test-symbols.js"
+    "test:lexem": "ts-node tests/test-lexem.ts",
+    "test:symbols": "ts-node tests/test-symbols.ts"
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "fs": "0.0.1-security",
+  "devDependencies": {
+    "@types/node": "^10.10.2",
     "npm": "^6.4.1",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.0.3"
   }
 }

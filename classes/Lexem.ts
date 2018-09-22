@@ -1,55 +1,95 @@
-/**
- * importação das dependências da classe
- */
-const fs = require('fs');
+import fs from 'fs';
 
-const Token = require('./token');
-const Symbols = require('./symbols');
+import { Token } from './token';
+import { Symbols } from './symbols';
 
 /**
- * classe que
+ * classe que faz a validação léxica
  * @param {string} filepath
  */
-const Lexem = function (filepath) {
+export class Lexem {
+
+  private _buffer: number;
+  private _state: number;
+  private _col: number;
+  private _row: number;
+  private _filepath: string;
+  private _file: string[];
+  private _isValid: boolean;
+
+  constructor(filepath: string) {
+
+    this._buffer = 0;
+    this._col = 1;
+    this._row = 1;
+    this._isValid = true;
+
+    if (!fs.existsSync(filepath))
+      this.throw('');
+
+    this.file = fs.readFileSync(filepath).toString().split('');
+
+  }
+
+  // getters & setters
+
+  public get buffer(): number { return this._buffer; }
+  public set buffer(v: number) { this._buffer = v; }
+
+  public get state(): number { return this._state; }
+  public set state(v: number) { this._state = v; }
+
+  public get filepath(): string { return this._filepath; }
+  public set filepath(v: string) { this._filepath = v; }
+
+  public get file(): string[] { return [].concat(this._file); }
+  public set file(v: string[]) { this._file = [].concat(v); }
+
+  public get row(): number { return this._row; }
+  public set row(v: number) { this._row = v; }
+
+  public get col(): number { return this._col; }
+  public set col(v: number) { this._col = v; }
+
+  public get isValid(): boolean { return this._isValid; }
+
+  // method's
 
   /**
-   * verifica se foi passado um arquivo e se o mesmo existe
+   * dispara um token que simboliza um erro léxico e define 
+   * o status do lexema como inválido
+   * @param message 
    */
-  if (!filepath || !fs.existsSync(filepath))
-    throw new Error('é necessário informar o nome do arquivo');
+  public throw(message): void {
+
+    this._isValid = false;
+
+    console.error(
+      new Token(
+        this.row, this.col,
+        new Symbols().lexem('ERR'),
+        `[Erro léxico]: ${message} \t linha: ${this.row}, coluna: ${this.col}\n`
+      )
+    );
+
+  }
 
   /**
-   * define o ponto de iteração do loop de leitura dos caracteres do arquivo
+   * retorna o próximo token encontrado no arquivo
    */
-  this.buffer = 0;
-  this.col = 1;
-  this.row = 1;
+  public next(): Token {
 
-  /**
-   * leitura do arquivo após a criação da classe
-   */
-  this.file = fs.readFileSync(filepath).toString().split('');
-
-  this.throw = message =>
-    console.error(`[Erro léxico]: ${message} \t linha: ${this.row}, coluna: ${this.col}\n`) &&
-    process.exit(1);
-
-  /**
-   * retorna o próximo token
-   */
-  this.next = () => {
-    let state = 0;
     let symbols = new Symbols();
     let c = null;
     let temp = '';
-    debugger;
+
     while (!0) {
 
       /**
        * verifica se chegou no final do arquivo
        */
-      if (this.file.length == this.buffer) {
-        return new Token(symbols.list.END_OF_FILE, this.row, this.col);
+      if (this.file.length === this.buffer) {
+        return new Token(this.row, this.col, 'END_OF_FILE');
       }
       /**
        * se não está no final do arquivo, 
@@ -59,7 +99,8 @@ const Lexem = function (filepath) {
         this.buffer++;
       }
 
-      switch (state) {
+      switch (this.state) {
+
         case 0:
 
           temp = '';
@@ -68,8 +109,10 @@ const Lexem = function (filepath) {
            * q0
            * caracteres que devem ser ignorados
            */
-          if (c === ' ' | c === '\r' | c === '\n' | c === '\t') {
-            state = 0;
+          if (c === ' ' || c === '\r' || c === '\n' || c === '\t') {
+
+            this.state = 0;
+
             /**
              * adiciona uma linha
              */
@@ -96,9 +139,9 @@ const Lexem = function (filepath) {
            * multiplicação
            */
           else if (c === '*') {
-            state = 0;
+            this.state = 0;
             this.col++;
-            return new Token(symbols.list.MULTIPLICACAO, this.row, this.col);
+            return new Token(this.row, this.col, 'MULTIPLICACAO');
           }
 
           /**
@@ -106,9 +149,9 @@ const Lexem = function (filepath) {
            * soma
            */
           else if (c === '+') {
-            state = 0;
+            this.state = 0;
             this.col++;
-            return new Token(symbols.list.SOMA, this.row, this.col);
+            return new Token(this.row, this.col, 'SOMA');
           }
 
           /**
@@ -116,9 +159,9 @@ const Lexem = function (filepath) {
            * subtração
            */
           else if (c === '-') {
-            state = 0;
+            this.state = 0;
             this.col++;
-            return new Token(symbols.list.SUBTRACAO, this.row, this.col);
+            return new Token(this.row, this.col, 'SUBTRACAO');
           }
 
           /**
@@ -126,9 +169,9 @@ const Lexem = function (filepath) {
            * igualdade
            */
           else if (c === '=') {
-            state = 0;
+            this.state = 0;
             this.col++;
-            return new Token(symbols.list.IGUAL, this.row, this.col);
+            return new Token(this.row, this.col, 'IGUAL');
           }
 
           /**
@@ -136,9 +179,9 @@ const Lexem = function (filepath) {
            * abre parenteses
            */
           else if (c === '(') {
-            state = 0;
+            this.state = 0;
             this.col++;
-            return new Token(symbols.list.ABRE_PARENTESES, this.row, this.col);
+            return new Token(this.row, this.col, 'ABRE_PARENTESES');
           }
 
           /**
@@ -146,9 +189,9 @@ const Lexem = function (filepath) {
            * fecha parenteses
            */
           else if (c === ')') {
-            state = 0;
+            this.state = 0;
             this.col++;
-            return new Token(symbols.list.FECHA_PARENTESES, this.row, this.col);
+            return new Token(this.row, this.col, 'FECHA_PARENTESES');
           }
 
           /**
@@ -156,7 +199,7 @@ const Lexem = function (filepath) {
            * aspas duplas
            */
           else if (c === '"') {
-            state = 8;
+            this.state = 8;
           }
 
           /**
@@ -164,9 +207,9 @@ const Lexem = function (filepath) {
            * vírgula
            */
           else if (c === ',') {
-            state = 0;
+            this.state = 0;
             this.col++;
-            return new Token(symbols.list.VIRGULA, this.row, this.col);
+            return new Token(this.row, this.col, 'VIRGULA');
           }
 
           /**
@@ -174,9 +217,9 @@ const Lexem = function (filepath) {
            * ponto e vírgula
            */
           else if (c === ';') {
-            state = 0;
+            this.state = 0;
             this.col++;
-            return new Token(symbols.list.PONTO_VIRGULA, this.row, this.col);
+            return new Token(this.row, this.col, 'PONTO_VIRGULA');
           }
 
           /**
@@ -184,7 +227,7 @@ const Lexem = function (filepath) {
            * maior que | maior ou igual que
            */
           else if (c === '>') {
-            state = 12;
+            this.state = 12;
           }
 
           /**
@@ -192,7 +235,7 @@ const Lexem = function (filepath) {
            * menor que | menor ou igual que
            */
           else if (c === '<') {
-            state = 15;
+            this.state = 15;
           }
 
           /**
@@ -200,7 +243,7 @@ const Lexem = function (filepath) {
            * digito
            */
           else if (/[0-9]/.test(c)) {
-            state = 21;
+            this.state = 21;
             temp += c;
           }
 
@@ -209,7 +252,7 @@ const Lexem = function (filepath) {
            * é um carater
            */
           else if (/[a-zA-Z]/.test(c)) {
-            state = 26;
+            this.state = 26;
             temp += c;
           }
 
@@ -218,7 +261,7 @@ const Lexem = function (filepath) {
            * divisão | comentario simples | comentario de muitas linhas
            */
           else if (c === '/') {
-            state = 28;
+            this.state = 28;
           }
 
           /**
@@ -226,10 +269,10 @@ const Lexem = function (filepath) {
            */
           break;
 
-          /**
-           * q7 => q8
-           * aspas simples => caracter ASCII
-           */
+        /**
+         * q7 => q8
+         * aspas simples => caracter ASCII
+         */
         case 8:
           this.col++;
 
@@ -246,13 +289,13 @@ const Lexem = function (filepath) {
            */
           if (c === '"') {
             this.col++;
-            return `A ligagem não aceita Strings vazias na linha ${this.row} e na coluna ${this.col}`;
+            this.throw(`A ligagem não aceita strings vazias na linha ${this.row} e na coluna ${this.col}`);
           }
           /**
            * se não for um caracter ASCII tem que dar pau
            */
           else if (!/[\x00-\x7F]/.test(c)) {
-            this.throw('o caracter informado não é um caracter ASCII válido');
+            this.throw('O caracter informado não é um caracter ASCII válido');
           }
 
           /**
@@ -260,32 +303,32 @@ const Lexem = function (filepath) {
            */
           break;
 
-          /**
-           * q0 => q12
-           * tratamento iniciando com "maior que"
-           */
+        /**
+         * q0 => q12
+         * tratamento iniciando com 'maior que'
+         */
         case 12:
           this.col++;
-          state = 0;
+          this.state = 0;
           /**
            * q14
            * maior ou igual que
            */
           if (c === '=') {
             this.col++;
-            return new Token(symbols.list.MAIOR_IGUAL_QUE, this.row, this.col);
+            return new Token(this.row, this.col, 'MAIOR_IGUAL_QUE');
           }
           /**
            * q13
            * outro
            */
           else {
-            return new Token(symbols.list.MAIOR_QUE, this.row, this.col);
+            return new Token(this.row, this.col, 'MAIOR_QUE');
           }
-          /**
-           * q0 => q11
-           * tratamento iniciando com "menor que"
-           */
+        /**
+         * q0 => q11
+         * tratamento iniciando com 'menor que'
+         */
         case 15:
           this.col++;
           /**
@@ -293,16 +336,16 @@ const Lexem = function (filepath) {
            * inicio de verificacao para atribuicao
            */
           if (c === '-') {
-            state = 19;
+            this.state = 19;
           } else {
-            state = 0;
+            this.state = 0;
             /**
              * q16
              * diferente que
              */
             if (c === '>') {
               this.col++;
-              return new Token(symbols.list.DIFERENTE, this.row, this.col);
+              return new Token(this.row, this.col, 'DIFERENTE');
             }
             /**
              * q18
@@ -310,21 +353,21 @@ const Lexem = function (filepath) {
              */
             else if (c === '=') {
               this.col++;
-              return new Token(symbols.list.MAIOR_IGUAL_QUE, this.row, this.col);
+              return new Token(this.row, this.col, 'MAIOR_IGUAL_QUE');
             }
             /**
              * q17
              * menor que
              */
             else {
-              return new Token(symbols.list.MENOR_QUE, this.row, this.col);
+              return new Token(this.row, this.col, 'MENOR_QUE');
             }
           }
           break;
-          /**
-           * q15 => q19
-           * segunda verificacao para atribuição
-           */
+        /**
+         * q15 => q19
+         * segunda verificacao para atribuição
+         */
         case 19:
           this.col++;
 
@@ -339,13 +382,13 @@ const Lexem = function (filepath) {
            * q20
            * se não for uma atribuição mostre erro
            */
-          state = 0;
-          return new Token(symbols.list.ATRIBUI, this.row, this.col);
+          this.state = 0;
+          return new Token(this.row, this.col, 'ATRIBUI');
 
-          /**
-           * q0 => q21
-           * verificao se é digito
-           */
+        /**
+         * q0 => q21
+         * verificao se é digito
+         */
         case 21:
           this.col++;
           temp += c;
@@ -354,7 +397,7 @@ const Lexem = function (filepath) {
            * caso seja ponto 
            */
           if (c === '.') {
-            state = 22;
+            this.state = 22;
           }
 
           /**
@@ -362,76 +405,73 @@ const Lexem = function (filepath) {
            * caso seja  qualquer coisa diferente de numero
            */
           else if (!/[0-9]/.test(c)) {
-            state = 0;
-            let n = new Token(symbols.list.NUMERICO, this.row, this.col);
+            this.state = 0;
+            let n = new Token(this.row, this.col, 'NUMERICO');
             n.lexem = temp;
             return n;
           }
           break;
 
-          /**
-           * q21 => q22
-           */
+        /**
+         * q21 => q22
+         */
         case 22:
           this.col++;
           temp += c;
 
           if (!/[0-9]/.test(c)) {
-            this.throw("O caracter encontrado não é do tipo NUMERICO")
+            this.throw('O caracter encontrado não é do tipo NUMERICO')
           }
 
           /**
            * q23
            * segunda parte do ponto flutuante
            */
-          state = 23;
+          this.state = 23;
 
           break;
 
-          /**
-           * q22 => q23
-           * segunda parte do ponto
-           */
+        /**
+         * q22 => q23
+         * segunda parte do ponto
+         */
         case 23:
-          
+
           temp += c;
 
           /**
            * q24
            */
           if (!/[0-9]/.test(c)) {
-            state = 0;
-            let n = new Token(symbols.list.NUMERICO, this.row, this.col);
+            this.state = 0;
+            let n = new Token(this.row, this.col, 'NUMERICO');
             n.lexem = temp;
             return n;
           }
 
           break;
 
-          /**
-           * q0 => q26
-           * literal
-           */
+        /**
+         * q0 => q26
+         * literal
+         */
         case 26:
           this.col++;
           temp += c;
-          
+
           /**
            * q27
            * retorna ou uma palavra reservada KW ou um ID
            */
           if (!/[a-zA-Z0-9]/.test(c)) {
-            state = 0;
-            let n = new Token(null, this.row, this.col);
-            n.name = !!symbols.getLexem(temp) ? "KW" : "ID";
-            n.lexem = temp;
-            return n;
+            this.state = 0;
+            return new Token(this.row, this.col, !!symbols.lexem(temp) ? 'KW' : 'ID', temp);
           }
 
           break;
-          /**
-           * q0 => q28
-           */
+        /**
+         * q0 => q28
+         */
         case 28:
           this.col++;
           /**
@@ -439,28 +479,28 @@ const Lexem = function (filepath) {
            * comentario de 1 linha
            */
           if (c === '/') {
-            state = 30;
+            this.state = 30;
           }
           /**
            * q31
            * comentario de múltiplas linhas
            */
           else if (c === '*') {
-            state = 31;
+            this.state = 31;
           }
           /**
            * q29
            * divisão
            */
           else {
-            state = 0;
-            return new Token(symbols.list.DIVISAO, this.row, this.col);
+            this.state = 0;
+            return new Token(this.row, this.col, 'DIVISAO');
           }
           break;
-          /**
-           * q28 => q30
-           * leitura de qualquer caracter no comentario de 1 linha
-           */
+        /**
+         * q28 => q30
+         * leitura de qualquer caracter no comentario de 1 linha
+         */
         case 30:
           this.col++;
           /**
@@ -469,7 +509,7 @@ const Lexem = function (filepath) {
            */
           if (c === '\n') {
             this.row++;
-            state = 0;
+            this.state = 0;
           }
           /**
            * caso use uma tabulação dentro dos comentarios deve-se respeitar a regra
@@ -485,9 +525,9 @@ const Lexem = function (filepath) {
             this.throw('O caracter não é um ASCII válido');
           }
           break;
-          /**
-           * {q28, q32} => q31
-           */
+        /**
+         * {q28, q32} => q31
+         */
         case 31:
           this.col++;
           /**
@@ -501,7 +541,7 @@ const Lexem = function (filepath) {
            * possivel finalizacao
            */
           else if (c === '*') {
-            state = 32;
+            this.state = 32;
           }
           /**
            * se não for ASCII tem que dar pau
@@ -510,9 +550,9 @@ const Lexem = function (filepath) {
             this.throw('O caracter não é um ASCII válido');
           }
           break;
-          /**
-           * q31 => q32
-           */
+        /**
+         * q31 => q32
+         */
         case 32:
           this.col++;
           /**
@@ -520,14 +560,14 @@ const Lexem = function (filepath) {
            */
           if (c === '/') {
             this.col++;
-            state = 0;
+            this.state = 0;
           }
           /**
            * caso seja um ASCII valido veja se volta para 31
            */
           else if (/[\x00-\x7F]/.test(c)) {
             if (c !== '*') {
-              state = 31;
+              this.state = 31;
             }
           }
           /**
@@ -539,6 +579,7 @@ const Lexem = function (filepath) {
           break;
       }
     }
-  };
-};
-module.exports = Lexem;
+
+  }
+
+}

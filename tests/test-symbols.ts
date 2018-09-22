@@ -1,5 +1,4 @@
-// importa a classe Symbols
-const Symbols = require('../classes/symbols'); 
+import { Symbols } from '../classes/symbols';
 
 // cria uma instancia da classe
 let s = new Symbols();
@@ -12,7 +11,7 @@ console.log(s.print());
 /**
  * teste de recuperação de 
  */
-console.log(s.get('MAIOR_QUE'))
+console.log(s.lexem('MAIOR_QUE'))
 
 /**
  * teste de acrescentar um novo símbolo
