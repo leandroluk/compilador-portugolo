@@ -1,5 +1,3 @@
-import * as fs from 'fs';
-
 import { Token } from './token';
 import { Symbols } from './symbols';
 
@@ -59,7 +57,7 @@ export class Lexem {
    * o status do lexema como inválido
    * @param message 
    */
-  public throw(message): void {
+  public throw(message: string): void {
 
     this._isValid = false;
 

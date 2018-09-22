@@ -7,7 +7,7 @@ export class Symbols {
     /**
      * tabela de palavras reservadas
      */
-    private list = {
+    private list: any = {
         ALGORITMO: 'ALGORITMO', DECLARE: 'DECLARE', FIM: 'FIM', SUBROTINA: 'SUBROTINA',
         ABRE_PARENTESES: '(', FECHA_PARENTESES: ')', PONTO_VIRGULA: ';', VIRGULA: ',',
         RETORNE: 'RETORNE', LOGICO: 'LOGICO', NUMERICO: 'NUMERICO', LITERAL: 'LITERAL',
