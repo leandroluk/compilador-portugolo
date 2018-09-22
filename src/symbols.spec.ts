@@ -1,5 +1,3 @@
-import * as path from 'path';
-import * as fs from 'fs';
 import { expect } from 'chai';
 import 'mocha';
 
@@ -24,4 +22,5 @@ describe('Symbols.ts', () => {
     it('fazer a impressão da estrutura da linguagem', () => {
         expect(symbols.toString()).is.string;
     })
+    
 });
