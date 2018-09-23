@@ -17,6 +17,7 @@ export class Lexem {
   private _isValid: boolean;
 
   constructor(file?: string) {
+    this._state = 0;
     this._buffer = 0;
     this._col = 1;
     this._row = 1;
