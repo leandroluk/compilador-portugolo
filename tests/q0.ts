@@ -1,8 +1,6 @@
 import { Lexem } from '../src/Lexem';
 import { Token } from '../src/token';
 
-debugger;
-
 let l = new Lexem("             ");
 
 let end = false;
@@ -10,8 +8,9 @@ let end = false;
 while (!end) {
 
     let token: Token = l.next();
+    console.log(token.toString());
 
-    if (token.lexem === "END_OF_FILE") {
+    if (token.name == "END_OF_FILE") {
         end = true;
     }
 

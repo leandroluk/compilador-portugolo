@@ -36,18 +36,18 @@ export class Symbols {
      * @param {string} lexem 
      */
     public token(lexem: string): string {
-        return this.list.hasOwnProperty(lexem) ? this.list[lexem] : null;
+        for (let key in this.list)
+            if (this.list[key].toLowerCase() === lexem.toLowerCase())
+                return this.list[key];
+        return null;
     }
 
     /**
      * método de retornar um lexema com base no token que for procurado
-     * @param {string} token 
+     * @param {string} lexem 
      */
     public lexem(token: string): string {
-        for (let key in this.list)
-            if (this.list[key].toLowerCase() === token.toLowerCase())
-                return this.list[key];
-        return null;
+        return this.list.hasOwnProperty(token) ? this.list[token] : null;
     }
 
     /**
