@@ -107,21 +107,21 @@ export class Lexem {
            * q0
            * caracteres que devem ser ignorados
            */
-          if (c === ' ' || c === '\r' || c === '\n' || c === '\t') {
+          if (c === ' ' || /(\r|\n|\t)/gm.test(c)) {
 
             this.state = 0;
 
             /**
              * adiciona uma linha
              */
-            if (c === '\n') {
+            if (/(\r\n|\n)/gm.test(c)) {
               this.row++;
               this.col = 1;
             }
             /**
              * se tiver tabulação, aumente 3 nas colunas
              */
-            else if (c === '\t') {
+            else if (/(\t)/gm.test(c)) {
               this.col += 3;
             }
             /**
@@ -273,12 +273,13 @@ export class Lexem {
          */
         case 8:
           this.col++;
-
           /**
-           * tratamento para quebra de linha após uma aspas duplas
-           */
-          if (c === '\n') {
+             * tratamento para quebra de linha após uma aspas duplas
+             */
+          if (/(\r\n|\n)/gm.test(c)) {
             this.throw('Não é permitido quebra de linha após uma aspas duplas');
+            this.buffer += 2;
+            continue;
           }
 
           /**
@@ -287,7 +288,7 @@ export class Lexem {
            */
           if (c === '"') {
             this.col++;
-            if(temp.length === 0) {
+            if (temp.length === 0) {
               this.throw(`A ligagem não aceita strings vazias na linha ${this.row} e na coluna ${this.col}`);
             }
             else {
@@ -359,7 +360,7 @@ export class Lexem {
              */
             else if (c === '=') {
               this.col++;
-              return new Token(this.row, this.col, 'MAIOR_IGUAL_QUE');
+              return new Token(this.row, this.col, 'MENOR_IGUAL_QUE');
             }
             /**
              * q17
@@ -469,7 +470,7 @@ export class Lexem {
            */
           if (!/[a-zA-Z0-9]/.test(c)) {
             this.state = 0;
-            return new Token(this.row, this.col, !!symbols.lexem(temp) ? 'KW' : 'ID', temp);
+            return new Token(this.row, this.col, !!symbols.token(temp) ? 'KW' : 'ID', temp);
           }
 
           temp += c;
@@ -513,7 +514,7 @@ export class Lexem {
            * q0
            * acaba o comentario e volta pro inicio
            */
-          if (c === '\n') {
+          if (/(\r\n|\n)/gm.test(c)) {
             this.row++;
             this.state = 0;
           }
@@ -521,7 +522,7 @@ export class Lexem {
            * caso use uma tabulação dentro dos comentarios deve-se respeitar a regra
            * da linguagem
            */
-          else if (c === '\t') {
+          else if (/(\t)/gm.test(c)) {
             this.col += 3;
           }
           /**
@@ -539,7 +540,7 @@ export class Lexem {
           /**
            * se for tabulação tem que respeitar a linguagem
            */
-          if (c === '\t') {
+          if (/(\t)/gm.test(c)) {
             this.col += 3;
           }
           /**
