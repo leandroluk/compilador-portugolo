@@ -1,5 +1,5 @@
-import { Token } from './token';
-import { Symbols } from './symbols';
+import { Token } from './Token';
+import { Symbols } from './Symbols';
 
 /**
  * classe que faz a validação léxica
