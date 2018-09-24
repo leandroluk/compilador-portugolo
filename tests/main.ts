@@ -4,7 +4,7 @@ import { Lexem } from '../src/Lexem';
 import { Token } from '../src/Token';
 
 
-let file = fs.readFileSync(path.join(__dirname, 'q0.ptgl')).toString();
+let file = fs.readFileSync(path.join(__dirname, 'arquivo_de_teste.ptgl')).toString();
 let l = new Lexem(`// a #{\n} a`);
 
 let end = false;
