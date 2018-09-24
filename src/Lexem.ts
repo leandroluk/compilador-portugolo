@@ -287,7 +287,13 @@ export class Lexem {
            */
           if (c === '"') {
             this.col++;
-            this.throw(`A ligagem não aceita strings vazias na linha ${this.row} e na coluna ${this.col}`);
+            if(temp.length === 0) {
+              this.throw(`A ligagem não aceita strings vazias na linha ${this.row} e na coluna ${this.col}`);
+            }
+            else {
+              this.state = 0;
+              return new Token(this.row, this.col, "LITERAL");
+            }
           }
           /**
            * se não for um caracter ASCII tem que dar pau
@@ -295,6 +301,8 @@ export class Lexem {
           else if (!/[\x00-\x7F]/.test(c)) {
             this.throw('O caracter informado não é um caracter ASCII válido');
           }
+
+          temp += c;
 
           /**
            * volta pro loop
@@ -455,8 +463,6 @@ export class Lexem {
          */
         case 26:
           this.col++;
-          temp += c;
-
           /**
            * q27
            * retorna ou uma palavra reservada KW ou um ID
@@ -465,6 +471,8 @@ export class Lexem {
             this.state = 0;
             return new Token(this.row, this.col, !!symbols.lexem(temp) ? 'KW' : 'ID', temp);
           }
+
+          temp += c;
 
           break;
         /**
