@@ -72,10 +72,11 @@ export class Lexem {
 
     }
 
+
     /**
      * retorna o próximo token encontrado
      */
-    public nextToken(): Token {
+    public next(): Token {
 
         let word: string = '';
         let state: number = 0;
@@ -186,7 +187,12 @@ export class Lexem {
                     if (c === '=') {
                         state = 0;
                         return new Token(Tag.OP_LE, '<=', +this._row, this._col);
+                    } else {//q7
+                        state = 0;
+                        this.lookABack();
+                        return new Token(Tag.OP_LT, '<', this._row, this._col);
                     }
+                    break;
                 case 6:
                     // q7
                     if (c === '*') {
@@ -195,37 +201,141 @@ export class Lexem {
                     } else {
                         this.catchError(c, '*', this._row, this._col);
                     }
+                    break;
                 case 7:
+                    if (c === '/') {
+                        this._col++;
+                        state = 0;
+                        this._errors = [];
+                    } else if (c === '*' && this._errors.length === 0) {
+                        this.catchError(c, '/', this._row, this._col);
+                    } else {
+                        if (c === '\n') {
+                            this._col = 1;
+                            this._row++;
+                        }
+                        if (this._errors.length === 0) {
+                            this.catchError(c, '/', this._row, this._col);
+                        } else if (this._lookahead === this._eof) {
+                            return new Token(Tag.EOF, 'EOF', this._row, this._col);
+                        }
+                    }
+                    break;
                 case 8:
+                    // q9
+                    if (c === '=') {
+                        state = 0;
+                        return new Token(Tag.OP_LE, '>=', this._row, this._col);
+                    } else {// q10
+                        state = 0;
+                        this.lookABack();
+                        return new Token(Tag.OP_GT, '>', this._row, this._col);
+                    }
+                    break;
+                case 9:
+                    if (this.checkLinebreak(c))
+                        state = 0;
+                    break;
+                case 11:
+                    if (/[a-zA-Z0-9]/.test(c)) {
+                        word += c;
+                    } else {
+                        state = 0;
+                        this.lookABack();
+
+                        let token: Token = this._ts.get(word.toUpperCase());
+
+                        if (!token) {
+                            return new Token(Tag.ID, word, this._row, this._col);
+                        } else {
+                            token.col = this._col;
+                            token.row = this._row;
+                            return token;
+                        }
+                    }
+                    break;
+                case 13:
+                    if (/[0-9]/.test(c)) {
+                        word += c;
+                    } else if (c == '.') {
+                        state = 15;
+                        word += c;
+                    } else {
+                        state = 0;
+                        this.lookABack();
+                        return new Token(Tag.NUMERICO, word, this._row, this._col);
+                    }
+                    break;
+                case 15:
+                    if (/^[0-9]/.test(c) && this._errors.length === 0) {
+                        //q15 q16
+                        this.catchError(c, 'Numerico', this._row, this._col);
+                        this.checkLinebreak(c);
+
+                    } else {//q17
+                        word += c;
+                        state = 0;
+                        this._errors = [];
+                        return new Token(Tag.NUMERICO, word, this._row, this._col);
+                    }
+
+                    break;
+                case 18:
+                    if (c === '"') { // q20
+                        if (this._errors.length === 0) {
+                            this.catchError(c, 'ASCII', this._row, this._col);
+                        } else {
+                            word += c;
+                            state = 0;
+                            this._errors = [];
+                            return new Token(Tag.LITERAL, word, this._row, this._col);
+                        }
+                    }else if( this._lookahead === this._eof){
+                        this.catchError('$', ' ' + '"' + ' ', this._row, this._col);
+                        return new Token(Tag.EOF, "EOF", this._row, this._col);
+                    }else if (/^[\x00-\x7F]/.test(c)) {
+                        this.checkLinebreak(c);
+                        word += c;
+                        this._errors.push(new Error('esse caracter não pe ASCII'));
+                    }
+                    break;
+                case 26: 
                     if(c === '=') {
-                        
+                        return new Token(Tag.OP_GE, '>=' , this._row, this._col);
+                    } else {
+                        state = 0;
+                        this.lookABack();
+                        return new Token(Tag.OP_GT, '>', this._row, this._col);
+                    }
+                case 29: 
+                    if(c === '-'){//q33
+                        state = 33;
+                    }else if (c === '='){//q31
+                        return new Token(Tag.OP_LE, "<=", this._row, this._col);
+                    }else if (c === '>'){//q30
+                        return new Token(Tag.OP_LT_GT, "<>", this._row, this._col);
+                    }else {
+                        state = 0;
+                        this.lookABack();
+                        return new Token(Tag.OP_LT, "<", this._row, this._col);
                     }
                 break;
-                case 9:
-                case 10:
-                case 11:
-                case 12:
-                case 13:
-                case 14:
-                case 15:
-                case 16:
-                case 17:
-                case 18:
-                case 19:
-                case 20:
-                case 21:
-                case 22:
-                case 23:
-                case 24:
-                case 25:
-                case 26:
-                case 27:
-                case 28:
-                case 29:
-                case 30:
-                case 31:
-                case 32:
-                case 33:
+                case 33: 
+                if (c === '-') {//q34
+                    this._errors = [];
+					return new Token(Tag.OP_ARTIB, "<--", this._row, this._col);
+                } else {
+                    if (this._errors.length === 0) {
+                        this.catchError(c, ' - ', this._row, this._col);
+                    } else {
+                        if(this._lookahead === this._eof) {
+                            this.lookABack();
+                            state = 0;
+                        }
+                    }
+                    this.checkLinebreak(c);
+                }
+                break;
             }
 
         }
