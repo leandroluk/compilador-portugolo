@@ -6,7 +6,7 @@ export class Ts {
     private ts: { [key: string]: Token } = {}
 
     constructor(){
-        this.ts[Tag.KW_ALGORITMO, 'ALGORITMO'];
+        this.ts[Tag.KW_ALGORITMO] = new Token('ALGORITMO');
     }
 
 }
