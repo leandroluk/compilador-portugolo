@@ -197,6 +197,10 @@ export class Lexem {
                     }
                 case 7:
                 case 8:
+                    if(c === '=') {
+                        
+                    }
+                break;
                 case 9:
                 case 10:
                 case 11:
