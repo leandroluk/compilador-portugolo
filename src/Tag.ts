@@ -17,10 +17,10 @@ export enum Tag {
     OP_ARTIB,           // <--
 
     // SIMBOLOS AUXILIARES
-    SB_A_P,             // (
-    SB_F_P,             // )
     SB_VIRG,            // ,
     SB_PVIRG,           // ;
+    SB_AP,              // (
+    SB_FP,              // )
 
     // TIPOS
     NUMERICO,           // NUMBER
