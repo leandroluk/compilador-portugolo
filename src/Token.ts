@@ -1,4 +1,3 @@
-import { Symbols } from './Symbols';
 import { Tag } from './Tag';
 
 export class Token {

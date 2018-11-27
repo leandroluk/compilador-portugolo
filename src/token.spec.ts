@@ -1,10 +1,11 @@
 import { expect } from 'chai';
 import 'mocha';
 import { Token } from './token';
+import { Tag } from './Tag';
 
 describe('Token.ts', () => {
 
-    it('criar um token', () => expect(new Token(1, 1, "ERR", "")).is.instanceof(Token));
-    it('retornar um token', () => expect(new Token(1, 1, "ERR", "").toString()).is.string);
+    it('criar um token', () => expect(new Token(Tag.NUMERICO, "4")).is.instanceof(Token));
+    it('retornar um token', () => expect(new Token(Tag.ID, "teste").toString()).is.string);
 
 });
