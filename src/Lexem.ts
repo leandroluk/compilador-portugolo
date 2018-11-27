@@ -75,7 +75,7 @@ export class Lexem {
     /**
      * retorna o próximo token encontrado
      */
-    public nextToken(): Token {
+    public next(): Token {
 
         let word: string = '';
         let state: number = 0;
