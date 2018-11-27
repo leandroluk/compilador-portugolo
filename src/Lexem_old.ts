@@ -1,4 +1,4 @@
-import { Token } from './Token';
+import { Token } from './token';
 import { Symbols } from './Symbols';
 
 /**

@@ -1,5 +1,5 @@
-import { Token } from "./Token";
-import { Tag } from "./Tag";
+import { Token } from "./token";
+import { Tag } from "./tag";
 
 export class Ts {
 

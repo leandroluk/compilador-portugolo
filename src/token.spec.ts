@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import 'mocha';
 import { Token } from './token';
-import { Tag } from './Tag';
+import { Tag } from './tag';
 
 describe('Token.ts', () => {
 

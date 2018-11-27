@@ -5,7 +5,7 @@ import 'mocha';
 
 import { Lexem } from './lexem';
 import { Symbols } from './Symbols';
-import { Token } from './Token';
+import { Token } from './token';
 
 describe('Lexem.ts', () => {
 
