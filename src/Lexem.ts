@@ -187,6 +187,7 @@ export class Lexem {
                         state = 0;
                         return new Token(Tag.OP_LE, '<=', +this._row, this._col);
                     }
+                    break;
                 case 6:
                     // q7
                     if (c === '*') {
@@ -195,33 +196,52 @@ export class Lexem {
                     } else {
                         this.catchError(c, '*', this._row, this._col);
                     }
+                    break;
                 case 7:
-                case 8:
-                case 9:
-                case 10:
-                case 11:
-                case 12:
-                case 13:
-                case 14:
-                case 15:
-                case 16:
-                case 17:
-                case 18:
-                case 19:
-                case 20:
-                case 21:
-                case 22:
-                case 23:
-                case 24:
-                case 25:
-                case 26:
-                case 27:
-                case 28:
-                case 29:
-                case 30:
-                case 31:
-                case 32:
-                case 33:
+                    if (c === '/') {
+                        this._col++;
+                        state = 0;
+                        this._errors = [];
+                    } else if (c === '*' && this._errors.length === 0) {
+                        this.catchError(c, '/', this._row, this._col);
+                    } else {
+                        if (c === '\n') {
+                            this._col = 1;
+                            this._row++;
+                        }
+                        if (this._errors.length === 0) {
+                            this.catchError(c, '/', this._row, this._col);
+                        } else if (this._lookahead === this._eof) {
+                            return new Token(Tag.EOF, 'EOF', this._row, this._col);
+                        }
+                    }
+                    break;
+                case 8: break;
+                case 9: break;
+                case 10: break;
+                case 11: break;
+                case 12: break;
+                case 13: break;
+                case 14: break;
+                case 15: break;
+                case 16: break;
+                case 17: break;
+                case 18: break;
+                case 19: break;
+                case 20: break;
+                case 21: break;
+                case 22: break;
+                case 23: break;
+                case 24: break;
+                case 25: break;
+                case 26: break;
+                case 27: break;
+                case 28: break;
+                case 29: break;
+                case 30: break;
+                case 31: break;
+                case 32: break;
+                case 33: break;
             }
 
         }
