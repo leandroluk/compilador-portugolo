@@ -72,6 +72,19 @@ export class Lexem {
 
     }
 
+    /**
+     * retorna o index existente no lookahead quando for necessário
+     */
+    private lookABack(): void {
+        try {
+            if (this._lookahead != this._eof) {
+                this._lookahead--;
+                this._col--;
+            }
+        } catch (e) {
+            throw e;
+        }
+    }
 
     /**
      * retorna o próximo token encontrado
@@ -352,20 +365,6 @@ export class Lexem {
 
         }
 
-    }
-
-    /**
-     * retorna o index existente no lookahead quando for necessário
-     */
-    private lookABack(): void {
-        try {
-            if (this._lookahead != this._eof) {
-                this._lookahead--;
-                this._col--;
-            }
-        } catch (e) {
-            throw e;
-        }
     }
 
 }

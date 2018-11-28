@@ -1,6 +1,6 @@
-import { Lexem } from "./lexem";
-import { Token } from "./Token";
-import { Tag } from "./Tag";
+import { Lexem } from './lexem';
+import { Token } from './Token';
+import { Tag } from './Tag';
 
 export class Parser {
 
@@ -14,15 +14,15 @@ export class Parser {
     }
 
     /**
-     * chama o próximo token
+     * chama o próximo this._token
      */
     public next(): void {
         this._token = this._lexem.next();
     }
 
     /**
-     * "come" o token e chama o próximo caso a tag passada seja
-     * a mesma do token armazenado
+     * "come" o this._token e chama o próximo caso a tag passada seja
+     * a mesma do this._token armazenado
      * @param tag 
      */
     public eat(tag: Tag) {
@@ -39,10 +39,10 @@ export class Parser {
      * @param expect 
      * @param token 
      */
-    public buildErrorMessage(expect: string, token: Token): string {
+    public buildErrorMessage(expect: string): string {
         return `[Erro sintático] ` +
-            `Esperado "${expect}", ` +
-            `Encontrado "${token.lexem}".`;
+            `Esperado: '${expect}', ` +
+            `Encontrado: '${this._token.lexem}".`;
     }
 
     /**
@@ -79,27 +79,31 @@ export class Parser {
      * Compilador => Programa EOF
      */
     public Compilador(): void {
-        if (this._token.tag != Tag.KW_ALGORITMO)
-            this.skip(this.buildErrorMessage("algoritmo", this._token))
+
+        if (this._token.tag !== Tag.ALGORITMO)
+            this.skip(this.buildErrorMessage('algoritmo', this._token));
+
         this.Programa();
+
     }
 
     /**
-     * Programa => "algoritmo" RegexDeclVar ListaCmd "fim" "algoritmo" ListaRotina
+     * Programa => "algoritmo" RegexDeclVar ListaCmd "fim" "algoritmo" 
+     *             ListaRotina
      */
     public Programa(): void {
 
-        if (!this.eat(Tag.KW_ALGORITMO))
-            this.skip(this.buildErrorMessage("algoritimo", this._token));
+        if (!this.eat(Tag.ALGORITMO))
+            this.skip(this.buildErrorMessage('algoritimo'));
 
         this.RegexDeclVar();
         this.ListaCmd();
 
-        if (!this.eat(Tag.KW_FIM))
-            this.handleError(this.buildErrorMessage("fim", this._token));
+        if (!this.eat(Tag.FIM))
+            this.handleError(this.buildErrorMessage('fim'));
 
-        if (!this.eat(Tag.KW_ALGORITMO))
-            this.handleError(this.buildErrorMessage("algoritmo", this._token));
+        if (!this.eat(Tag.ALGORITMO))
+            this.handleError(this.buildErrorMessage('algoritmo'));
 
         this.ListaRotina();
 
@@ -109,239 +113,268 @@ export class Parser {
      * RegexDeclVar => "declare" Tipo ListaID ";" DeclaraVar | ε
      */
     public RegexDeclVar(): void {
-        if (this._token.tag == Tag.KW_DECLARE) {
-            this.eat(Tag.KW_DECLARE);
+        if (this._token.tag === Tag.DECLARE) {
+
+            this.eat(Tag.DECLARE);
             this.Tipo();
-            ListaID();
-            if (!eat(Tag.SMB_PontoVirgula))
-                erroSintatico(MensagemDeErro(" ; ", token));
-            DeclaraVar();
-        } else if (token.getClasse() == Tag.KW_algoritmo || token.getClasse() == Tag.ID
-            || token.getClasse() == Tag.KW_retorne || token.getClasse() == Tag.KW_se
-            || token.getClasse() == Tag.KW_enquanto || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_repita || token.getClasse() == Tag.KW_escreva
-            || token.getClasse() == Tag.KW_leia) {
+            this.ListaID();
 
-            return;
-        }
-        // skip()
-        else {
+            if (!this.eat(Tag.SB_PVIRG))
+                this.handleError(this.buildErrorMessage(';'));
 
-            skip(MensagemDeErro(" declare, se, enquanto, para, repita, id, escreva, leia,\r\n" +
-                "fim, retorne", token));
-            if (token.getClasse() != Tag.EOF)
-                RegexDeclVar();
+            this.DeclaraVar();
+
+        } else if ([
+            Tag.ALGORITMO, Tag.ID, Tag.RETORNE, Tag.SE, Tag.ENQUANTO,
+            Tag.PARA, Tag.REPITA, Tag.ESCREVA, Tag.LEIA
+        ].indexOf(this._token.tag) > -1) {
+            return
+        } else {
+            this.skip(this.buildErrorMessage(
+                'declare, se, enquanto, para, repita, id, escreva, leia'
+            ));
+            if (this._token.tag !== Tag.EOF)
+                this.RegexDeclVar();
         }
     }
-
-    // DeclaraVar → Tipo ListaID ";" DeclaraVar 5 | ε 6
-    public void DeclaraVar() {
-        // 5
-        if (token.getClasse() == (Tag.Logico) || token.getClasse() == Tag.Numerico || token.getClasse() == (Tag.Literal)
-            || token.getClasse() == Tag.Nulo) {
-            Tipo();
-            ListaID();
-
-            if (!eat(Tag.SMB_PontoVirgula))
-                erroSintatico(MensagemDeErro(" ; ", token));
-            DeclaraVar();
-
-        }
-        // 6
-        else if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.ID || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.KW_repita
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia) {
-
-            return;
-        } else {
-
-            skip(MensagemDeErro("  logico, numerico, literal, nulo ", token));
-            if (token.getClasse() != Tag.EOF)
-                DeclaraVar();
-        }
-
-    }
-
-    // ListaRotina → ListaRotina’ 7
-    public void ListaRotina() {
-        if (token.getClasse() == Tag.KW_subrotina || token.getClasse() == Tag.EOF) {
-            ListaRotinaLinha();
-        }
-        // skip Teste
-        else {
-            skip(MensagemDeErro(" subrotina ", token));
-            if (token.getClasse() != Tag.EOF)
-                ListaRotina();
-
-        }
-
-    }
-
-    // ListaRotina’ → Rotina ListaRotina’ 8 | ε 9
-    public void ListaRotinaLinha() {
-        if (token.getClasse() == Tag.KW_subrotina) {
-            Rotina();
-            ListaRotinaLinha();
-        } else if (token.getClasse() == Tag.EOF) {
-            return;
-        } else {
-            skip(MensagemDeErro(" subrotina ", token));
-            if (token.getClasse() != Tag.EOF)
-                ListaRotinaLinha();
-        }
-
-    }
-
-    // Rotina → "subrotina" ID "(" ListaParam ")" RegexDeclVar ListaCmd Retorno
-    // "fim" "subrotina" 10
-    public void Rotina() {
-
-        if (token.getClasse() == Tag.KW_subrotina) {
-            eat(Tag.KW_subrotina);
-
-            if (!eat(Tag.ID))
-                erroSintatico(MensagemDeErro(" ID ", token));
-            if (!eat(Tag.SMB_OP))
-                erroSintatico(MensagemDeErro(" ( ", token));
-            ListaParam();
-
-            if (!eat(Tag.SMB_CP))
-                erroSintatico(MensagemDeErro(" ) ", token));
-
-            RegexDeclVar();
-            ListaCmd();
-            Retorno();
-
-            if (!eat(Tag.KW_fim))
-                erroSintatico(MensagemDeErro(" fim ", token));
-            if (!eat(Tag.KW_subrotina))
-                erroSintatico(MensagemDeErro(" subrotina ", token));
-
-        }
-        // Synch()
-        else if (token.getClasse() == Tag.EOF) {
-            erroSintatico(MensagemDeErro("subrotina ", token));
-            return;
-        }
-        // skip()
-        else {
-            skip(MensagemDeErro("subrotina ", token));
-            if (token.getClasse() != Tag.EOF)
-                Rotina();
-        }
-
-    }
-
-    // ListaParam → Param ListaParam’ 11
-    public void ListaParam() {
-
-        if (token.getClasse() == Tag.ID) {
-            Param();
-            ListaParamLinha();
-
-        }
-        // sych
-        else if (token.getClasse() == Tag.SMB_CP) {
-            erroSintatico(MensagemDeErro("subrotina", token));
-            return;
-        }
-        // skip
-        else {
-            skip(MensagemDeErro("subrotina", token));
-            if (token.getClasse() != Tag.SMB_CP)
-                ListaParam();
-        }
-
-    }// fim ListaParam
-    // ListaParam’ → "," ListaParam 12 | ε 13
-
-    public void ListaParamLinha() {
-        if (token.getClasse() == Tag.SMB_SEMICOLON) {
-            eat(Tag.SMB_SEMICOLON);
-            ListaParam();
-        } else if (token.getClasse() == Tag.SMB_CP) {
-            return;
-        } else {
-            skip(MensagemDeErro(";", token));
-            if (token.getClasse() != Tag.EOF)
-                ListaParamLinha();
-        }
-
-    } // fim ListaParamLinha
-    // Param → ListaID Tipo 14
-
-    public void Param() {
-        if (token.getClasse() == Tag.ID) {
-            ListaID();
-            Tipo();
-        } else if (token.getClasse() == Tag.SMB_SEMICOLON || token.getClasse() == Tag.SMB_CP) {
-            erroSintatico(MensagemDeErro(" ID ", token));
-            return;
-        } else {
-            skip(MensagemDeErro(" ID ", token));
-            if (token.getClasse() != Tag.EOF)
-                Param();
-        }
-    }// Param
-
-    // ListaID → ID ListaID’ 15
-    public void ListaID() {
-        if (token.getClasse() == Tag.ID) {
-            eat(Tag.ID);
-
-            ListaIDLinha();
-        }
-        // sych
-        else if (token.getClasse() == Tag.SMB_PontoVirgula || token.getClasse() == Tag.Logico
-            || token.getClasse() == Tag.Numerico || token.getClasse() == Tag.Literal
-            || token.getClasse() == Tag.Nulo) {
-            erroSintatico(MensagemDeErro(" ID ", token));
-            return;
-        } else {
-            skip(MensagemDeErro(" ID ", token));
-            if (token.getClasse() != Tag.EOF)
-                ListaID();
-        }
-
-    }// fim ListaID
-
-    // ListaID ’ → "," ListaID 16 | ε 17
-    public void ListaIDLinha() {
-        if (token.getClasse() == Tag.SMB_SEMICOLON) {
-            eat(Tag.SMB_SEMICOLON);
-            ListaID();
-        } else if (token.getClasse() == Tag.SMB_PontoVirgula || token.getClasse() == Tag.Logico
-            || token.getClasse() == Tag.Numerico || token.getClasse() == Tag.Literal
-            || token.getClasse() == Tag.Nulo) {
-            return;
-        } else {
-            skip(MensagemDeErro(" virgula, ponto e virgula , logico, numerico, literal, nulo\r\n" +
-                "", token));
-            if (token.getClasse() != Tag.EOF)
-                ListaIDLinha();
-        }
-    } // fim ListaIDLinha
-
-    // Retorno → "retorne" Expressao 18 | ε 19
-    public void Retorno() {
-        // 18
-        if (token.getClasse() == Tag.KW_retorne) {
-            eat(Tag.KW_retorne);
-            Expressao();
-        }
-        // 19
-        else if (token.getClasse() == Tag.KW_fim) {
-            return;
-        } else {
-            skip(MensagemDeErro(" retorne , fim ", token));
-            if (token.getClasse() != Tag.EOF)
-                Retorno();
-        }
-    }// fim Retorno
 
     /**
-     * Tipo => "logico" | "numerico" | "literal" | "nulo" 
+     * DeclaraVar => Tipo ListaID ";" DeclaraVar | ε
+     */
+    public DeclaraVar(): void {
+
+        if ([
+            Tag.LOGICO, Tag.NUMERICO, Tag.LITERAL, Tag.NULO
+        ].indexOf(this._token.tag) > -1) {
+            this.Tipo();
+            this.ListaID();
+
+            if (!this.eat(Tag.SB_PVIRG))
+                this.handleError(this.buildErrorMessage(';'));
+
+            this.DeclaraVar();
+        }
+        else if ([
+            Tag.FIM, Tag.ID, Tag.RETORNE, Tag.SE, Tag.ENQUANTO,
+            Tag.PARA, Tag.REPITA, Tag.ESCREVA, Tag.LEIA
+        ].indexOf(this._token.tag) > -1) {
+            return;
+        }
+        else {
+
+            this.skip(this.buildErrorMessage(
+                'logico, numerico, literal, nulo'
+            ));
+
+            if (this._token.tag !== Tag.EOF)
+                this.DeclaraVar();
+
+        }
+
+    }
+
+    /**
+     * ListaRotina => ListaRotina
+     */
+    public ListaRotina(): void {
+        if ([Tag.SUBROTINA, Tag.EOF].indexOf(this._token.tag) > -1)
+            this.ListaRotinaLinha();
+        else {
+
+            this.skip(this.buildErrorMessage('subrotina'));
+
+            if (this._token.tag !== Tag.EOF)
+                this.ListaRotina();
+
+        }
+    }
+
+    /**
+     * ListaRotina => Rotina ListaRotina | ε
+     */
+    public ListaRotinaLinha(): void {
+
+        if (this._token.tag === Tag.SUBROTINA) {
+            this.Rotina();
+            this.ListaRotinaLinha();
+        } else if (this._token.tag === Tag.EOF) {
+            return;
+        } else {
+            this.skip(this.buildErrorMessage('subrotina'));
+            this.ListaRotinaLinha();
+        }
+
+    }
+
+    /**
+     * Rotina => "subrotina" ID "(" ListaParam ")" RegexDeclVar 
+     *           ListaCmd Retorno "fim" "subrotina"
+     */
+    public Rotina(): void {
+        if (this._token.tag === Tag.SUBROTINA) {
+
+            this.eat(Tag.SUBROTINA);
+
+            if (!this.eat(Tag.ID))
+                this.handleError(this.buildErrorMessage('id'));
+            if (!this.eat(Tag.SB_AP))
+                this.handleError(this.buildErrorMessage('('));
+
+            this.ListaParam();
+
+            if (!this.eat(Tag.SB_FP))
+                this.handleError(this.buildErrorMessage(')'));
+
+            this.RegexDeclVar();
+            this.ListaCmd();
+            this.Retorno();
+
+            if (!this.eat(Tag.FIM))
+                this.handleError(this.buildErrorMessage('fim'));
+
+            if (!this.eat(Tag.SUBROTINA))
+                this.handleError(this.buildErrorMessage('subrotina'));
+
+        }
+        else if (this._token.tag === Tag.EOF) {
+            this.handleError(this.buildErrorMessage('subrotina'));
+            return;
+        }
+        // this.skip()
+        else {
+            this.skip(this.buildErrorMessage('subrotina'));
+            this.Rotina();
+        }
+    }
+
+    /**
+     * ListaParam => Param ListaParam
+     */
+    public ListaParam(): void {
+        if (this._token.tag === Tag.ID) {
+            this.Param();
+            this.ListaParamLinha();
+        }
+        else if (this._token.tag === Tag.SB_FP) {
+            this.handleError(this.buildErrorMessage('subrotina'));
+            return;
+        }
+        else {
+            this.skip(this.buildErrorMessage('subrotina'));
+            this.ListaParam();
+        }
+    }
+
+    /**
+     * ListaParam => "," ListaParam | ε 
+     */
+    public ListaParamLinha(): void {
+        if (this._token.tag === Tag.SB_VIRG) {
+            this.eat(Tag.SB_VIRG);
+            this.ListaParam();
+        } else if (this._token.tag === Tag.SB_FP) {
+            return;
+        } else {
+
+            this.skip(this.buildErrorMessage(';'));
+
+            if (this._token.tag !== Tag.EOF)
+                this.ListaParamLinha();
+
+        }
+
+    }
+
+    /**
+     * Param => ListaID Tipo
+     */
+    public Param(): void {
+        if (this._token.tag === Tag.ID) {
+            this.ListaID();
+            this.Tipo();
+        } else if ([
+            Tag.SB_VIRG, Tag.SB_FP
+        ].indexOf(this._token.tag) > -1) {
+            this.handleError(this.buildErrorMessage('id'));
+            return;
+        } else {
+
+            this.skip(this.buildErrorMessage('id'));
+
+            if (this._token.tag !== Tag.EOF)
+                this.Param();
+
+        }
+    }
+
+    /**
+     * ListaID => ID ListaID
+     */
+    public ListaID(): void {
+
+        if (this._token.tag === Tag.ID) {
+            this.eat(Tag.ID);
+            this.ListaIDLinha();
+        }
+        else if ([
+            Tag.SB_PVIRG, Tag.LOGICO, Tag.NUMERICO, Tag.LITERAL,
+            Tag.NULO
+        ].indexOf(this._token.tag) > -1) {
+            this.handleError(this.buildErrorMessage('id'));
+            return;
+        } else {
+            this.skip(this.buildErrorMessage('id'));
+            if (this._token.tag !== Tag.EOF)
+                this.ListaID();
+        }
+
+    }
+
+    /**
+     * ListaID  => "," ListaID | ε
+     */
+    public ListaIDLinha(): void {
+        if (this._token.tag === Tag.SB_VIRG) {
+            this.eat(Tag.SB_VIRG);
+            this.ListaID();
+        } else if ([
+            Tag.SB_PVIRG, Tag.LOGICO, Tag.NUMERICO, Tag.LITERAL,
+            Tag.NULO
+        ].indexOf(this._token.tag) > -1) {
+            return;
+        } else {
+
+            this.skip(this.buildErrorMessage(
+                '",", ";", logico, numerico, literal, nulo'
+            ));
+
+            if (this._token.tag !== Tag.EOF)
+                this.ListaIDLinha();
+
+        }
+    }
+
+    /**
+     * Retorno => "retorne" Expressao | ε
+     */
+    public Retorno(): void {
+        // 18
+        if (this._token.tag === Tag.RETORNE) {
+            this.eat(Tag.RETORNE);
+            this.Expressao();
+        }
+        // 19
+        else if (this._token.tag === Tag.FIM) {
+            return;
+        } else {
+            this.skip(this.buildErrorMessage('retorne, fim'));
+            if (this._token.tag !== Tag.EOF)
+                this.Retorno();
+        }
+    }
+
+    /**
+     * Tipo => "logico" | "numerico" | "literal" | "nulo"
      */
     public Tipo(): void {
         switch (this._token.tag) {
@@ -360,827 +393,837 @@ export class Parser {
             case Tag.ID:
             case Tag.SB_VIRG:
             case Tag.SB_FP:
-                this.handleError(this.buildErrorMessage("Tipo", this._token));
+                this.handleError(this.buildErrorMessage(
+                    'logico, numerico, literal, nulo'
+                ));
                 break;
             default:
-                this.skip(this.buildErrorMessage("Tipo", this._token));
-                if (this._token.tag != Tag.EOF)
+                this.skip(this.buildErrorMessage(
+                    'logico, numerico, literal, nulo'
+                ));
+                if (this._token.tag !== Tag.EOF)
                     this.Tipo();
         }
     }
 
-    // ListaCmd → ListaCmd’ 24
-    public void ListaCmd() {
-        // 24
-        if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.ID || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.KW_ate
-            || token.getClasse() == Tag.KW_repita || token.getClasse() == Tag.KW_escreva
-            || token.getClasse() == Tag.KW_leia) {
-            ListaCmdLinha();
-        } else {
-
-            skip(MensagemDeErro(" se, enquanto, para, repita, id, escreva, leia, fim, retorne, ate", token));
-            if (token.getClasse() == Tag.EOF)
-                ListaCmd();
+    /**
+     * ListaCmd => ListaCmd
+     */
+    public ListaCmd(): void {
+        if ([
+            Tag.FIM, Tag.ID, Tag.RETORNE, Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ATE,
+            Tag.REPITA, Tag.ESCREVA, Tag.LEIA
+        ].indexOf(this._token.tag) > -1) {
+            this.ListaCmdLinha();
         }
+        else {
 
-    }// fim listaCmd
+            this.skip(this.buildErrorMessage(
+                'se, enquanto, para, repita, id, escreva, leia, fim, retorne, ate'
+            ));
 
-    // ListaCmd’ → Cmd ListaCmd’ 25 | ε 26
-    public void ListaCmdLinha() {
-        // 25
-        if (token.getClasse() == Tag.ID || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.KW_repita
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia) {
-            Cmd();
-            ListaCmdLinha();
+            if (this._token.tag === Tag.EOF)
+                this.ListaCmd();
+
         }
-        // 26
-        else if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate) {
+    }
+
+    /**
+     * ListaCmd => Cmd ListaCmd | ε
+     */
+    public ListaCmdLinha(): void {
+        if ([
+            Tag.ID, Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.REPITA,
+            Tag.ESCREVA, Tag.LEIA
+        ].indexOf(this._token.tag) > -1) {
+            this.Cmd();
+            this.ListaCmdLinha();
+        }
+        else if ([
+            Tag.FIM, Tag.RETORNE, Tag.ATE
+        ].indexOf(this._token.tag) > -1) {
             return;
-
         } else {
 
-            skip(MensagemDeErro(" se, enquanto, para, repita, id, escreva, leia, fim, retorne, ate", token));
-            if (token.getClasse() != Tag.EOF)
-                ListaCmdLinha();
-        }
+            this.skip(this.buildErrorMessage(
+                'se, enquanto, para, repita, id, escreva, leia, fim, retorne, ate'
+            ));
 
-    }// fim ListaCmdLinha
+            if (this._token.tag !== Tag.EOF)
+                this.ListaCmdLinha();
+
+        }
+    }
 
 	/*
-	 * Cmd → CmdSe 27 | CmdEnquanto 28 | CmdPara 29 | CmdRepita 30 | ID Cmd’ 31 |
-	 * CmdEscreva 32 | CmdLeia 33
+	 * Cmd => CmdSe | CmdEnquanto | CmdPara | CmdRepita | ID Cmd | CmdEscreva | CmdLeia
 	 */
-    public void Cmd() {
-        // 27
-        if (token.getClasse() == Tag.KW_se) {
-            CmdSe();
+    public Cmd(): void {
+        switch (this._token.tag) {
+            case Tag.SE:
+                this.CmdSe();
+                break;
+            case Tag.ENQUANTO:
+                this.CmdEnquanto();
+                break;
+            case Tag.PARA:
+                this.CmdPara();
+                break;
+            case Tag.REPITA:
+                this.CmdRepita();
+                break;
+            case Tag.ID:
+                if (!this.eat(Tag.ID))
+                    this.handleError(this.buildErrorMessage('id'));
+                this.CmdLinha();
+                break;
+            case Tag.ESCREVA:
+                this.CmdEscreva();
+                break;
+            case Tag.LEIA:
+                this.CmdLeia();
+                break;
+            case Tag.FIM:
+            case Tag.RETORNE:
+            case Tag.ATE:
+                this.handleError(this.buildErrorMessage('se, enquanto, para, repita, id, escreva, leia'));
+                break;
+            default:
+                this.skip(this.buildErrorMessage('se, enquanto, para, repita, id, escreva, leia'));
+                if (this._token.tag !== Tag.EOF)
+                    this.Cmd();
         }
-        // 28
-        else if (token.getClasse() == Tag.KW_enquanto) {
-            CmdEnquanto();
-        } // 29
-        else if (token.getClasse() == Tag.KW_para) {
-            CmdPara();
-        } // 30
-        else if (token.getClasse() == Tag.KW_repita) {
-            CmdRepita();
-        } // 31
-        else if (token.getClasse() == Tag.ID) {
-            if (!eat(Tag.ID)) {
-                erroSintatico("Esperado \" ID \", encontrado " + "\"" + token.getLexema() + "\"");
-            }
-            CmdLinha();
-        } // 32
-        else if (token.getClasse() == Tag.KW_escreva) {
-            CmdEscreva();
-        } // 33
-        else if (token.getClasse() == Tag.KW_leia) {
-            CmdLeia();
+    }
+
+    /**
+     * Cmd => CmdAtrib | CmdChamaRotina
+     */
+    public CmdLinha(): void {
+        if (this._token.tag === Tag.OP_ARTIB)
+            this.CmdAtrib();
+        else if (this._token.tag === Tag.SB_AP)
+            this.CmdChamaRotina();
+        else if ([
+            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.REPITA, Tag.ID, Tag.ESCREVA, Tag.LEIA,
+            Tag.FIM, Tag.RETORNE, Tag.ATE
+        ].indexOf(this._token.tag) > -1) {
+            this.handleError(this.buildErrorMessage('<--, ('));
+        } else {
+
+            this.skip(this.buildErrorMessage('<--, ('));
+
+            if (this._token.tag !== Tag.EOF)
+                this.CmdLinha();
+
         }
+    }
 
-        // fim, retorne, ate
-        else if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate) {
+    /**
+     * CmdSe => "se" "(" Expressao ")" "inicio" ListaCmd "fim" CmdSe
+     */
+    public CmdSe(): void {
 
-            erroSintatico(MensagemDeErro(" se, enquanto, para, repita, id, escreva, leia ", token));
+        if (this._token.tag === Tag.SE) {
+
+            this.eat(Tag.SE);
+
+            if (!this.eat(Tag.SB_AP))
+                this.handleError(this.buildErrorMessage('('));
+
+            this.Expressao();
+
+            if (!this.eat(Tag.SB_FP))
+                this.handleError(this.buildErrorMessage(')'));
+
+            if (!this.eat(Tag.INICIO))
+                this.handleError(this.buildErrorMessage('inicio'));
+
+            this.ListaCmd();
+
+            if (!this.eat(Tag.FIM))
+                this.handleError(this.buildErrorMessage('fim'));
+
+            this.CmdSeLinha();
+
+        } else if ([
+            Tag.ENQUANTO, Tag.PARA, Tag.REPITA, Tag.ID, Tag.ESCREVA,
+            Tag.LEIA, Tag.FIM, Tag.RETORNE, Tag.ATE
+        ].indexOf(this._token.tag) > -1) {
+            this.handleError(this.buildErrorMessage('se'));
+        } else {
+
+            this.skip(this.buildErrorMessage('se'));
+
+            if (this._token.tag !== Tag.EOF)
+                this.CmdSe();
+
+        }
+    }
+
+    /**
+     * CmdSe => "senao" "inicio" ListaCmd "fim" | ε 
+     */
+    public CmdSeLinha(): void {
+        if (this._token.tag === Tag.SENAO) {
+
+            this.eat(Tag.SENAO);
+
+            if (!this.eat(Tag.INICIO))
+                this.handleError(this.buildErrorMessage('fim'));
+
+            this.ListaCmd();
+
+            if (!this.eat(Tag.FIM))
+                this.handleError(this.buildErrorMessage('fim'));
+
+        }
+        else if ([
+            Tag.FIM, Tag.ID, Tag.RETORNE, Tag.SE, Tag.ENQUANTO, Tag.PARA,
+            Tag.ATE, Tag.REPITA, Tag.ESCREVA, Tag.LEIA
+        ].indexOf(this._token.tag) > -1) {
             return;
         } else {
-            skip(MensagemDeErro(" se, enquanto, para, repita, id, escreva, leia ", token));
-            if (token.getClasse() != Tag.EOF)
-                Cmd();
-        }
 
-    } // fim Cmd
+            this.skip(this.buildErrorMessage(
+                'senao , se, enquanto, para, repita, id, escreva, leia,fim, retorne, ate'
+            ));
 
-    // Cmd’ → CmdAtrib 34 | CmdChamaRotina 35
-    public void CmdLinha() {
-        // 34
-        if (token.getClasse() == Tag.RELOP_ARTIB) {
-            CmdAtrib();
-        }
-        // 35
-        else if (token.getClasse() == Tag.SMB_OP) {
-            CmdChamaRotina();
-        } else if (token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.KW_repita || token.getClasse() == Tag.ID
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate) {
-            erroSintatico(MensagemDeErro("<--, (", token));
-        } else {
-            skip(MensagemDeErro(" <--, ( ", token));
-            if (token.getClasse() != Tag.EOF)
-                CmdLinha();
+            if (this._token.tag !== Tag.EOF)
+                this.CmdSeLinha();
 
         }
+    }
 
-    }// fim CmdLinha
-
-    // CmdSe → "se" "(" Expressao ")" "inicio" ListaCmd "fim" CmdSe’ 36
-    public void CmdSe() {
-
-        if (token.getClasse() == Tag.KW_se) {
-            eat(Tag.KW_se);
-
-            if (!eat(Tag.SMB_OP)) {
-                erroSintatico("Esperado \"( \", encontrado " + "\"" + token.getLexema() + "\"");
-            }
-
-            Expressao();
-
-            if (!eat(Tag.SMB_CP)) {
-                erroSintatico("Esperado \") \", encontrado " + "\"" + token.getLexema() + "\"");
-            }
-            if (!eat(Tag.KW_inicio)) {
-                erroSintatico("Esperado \" INICIO \", encontrado " + "\"" + token.getLexema() + "\"");
-            }
-
-            ListaCmd();
-
-            if (!eat(Tag.KW_fim)) {
-                erroSintatico("Esperado \" FIM \", encontrado " + "\"" + token.getLexema() + "\"");
-            }
-            CmdSeLinha();
-
-        } else if (token.getClasse() == Tag.KW_enquanto || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_repita || token.getClasse() == Tag.ID
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate) {
-            erroSintatico(MensagemDeErro(" se ", token));
-        } else {
-
-            skip(MensagemDeErro(" se ", token));
-            if (token.getClasse() != Tag.EOF)
-                CmdSe();
-
-        }
-
-    }// fim CmdSe
-
-    // CmdSe’ → "senao" "inicio" ListaCmd "fim" 37 | ε 38
-    public void CmdSeLinha() {
-        // 37
-        if (token.getClasse() == Tag.KW_senao) {
-
-            eat(Tag.KW_senao);
-
-            if (!eat(Tag.KW_inicio)) {
-                erroSintatico("Esperado \" INICIO \", encontrado " + "\"" + token.getLexema() + "\"");
-            }
-            ListaCmd();
-
-            if (!eat(Tag.KW_fim)) {
-                erroSintatico("Esperado \" fim \", encontrado " + "\"" + token.getLexema() + "\"");
-            }
-        }
-        // 38
-        else if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.ID || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.KW_ate
-            || token.getClasse() == Tag.KW_repita || token.getClasse() == Tag.KW_escreva
-            || token.getClasse() == Tag.KW_leia) {
-            return;
-        } else {
-            skip(MensagemDeErro(" senao , se, enquanto, para, repita, id, escreva, leia,\r\n" +
-                "fim, retorne, ate ", token));
-            if (token.getClasse() != Tag.EOF)
-                CmdSeLinha();
-        }
-    }// fim CmdSeLinha
-
-    // CmdEnquanto → "enquanto" "(" Expressao ")" "faca" "inicio" ListaCmd "fim" 39
-    public void CmdEnquanto() {
-        if (token.getClasse() == Tag.KW_enquanto) {
-            eat(Tag.KW_enquanto);
-            if (!eat(Tag.SMB_OP)) {
-                erroSintatico("Esperado \" ( \", encontrado " + "\"" + token.getLexema() + "\"");
+    /**
+     * CmdEnquanto => "enquanto" "(" Expressao ")" "faca" "inicio" ListaCmd "fim"
+     */
+    public CmdEnquanto(): void {
+        if (this._token.tag === Tag.ENQUANTO) {
+            this.eat(Tag.ENQUANTO);
+            if (!this.eat(Tag.SB_AP)) {
+                handleError('Esperado \'( \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
             Expressao();
 
-            if (!eat(Tag.SMB_CP)) {
-                erroSintatico("Esperado \" ) \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.SB_FP)) {
+                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
-            if (!eat(Tag.KW_faca)) {
-                erroSintatico("Esperado \" Faça \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.faca)) {
+                handleError('Esperado \'Faça \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
-            if (!eat(Tag.KW_inicio)) {
-                erroSintatico("Esperado \" INICIO \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.INICIO)) {
+                handleError('Esperado \'INICIO \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
             ListaCmd();
 
-            if (!eat(Tag.KW_fim)) {
-                erroSintatico("Esperado \" FIM \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.FIM)) {
+                handleError('Esperado \'FIM \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
-        } else if (token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_repita || token.getClasse() == Tag.ID
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate) {
-            erroSintatico(MensagemDeErro(" enquanto ", token));
+        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.REPITA || this._token.tag === Tag.ID
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.ATE) {
+            handleError(this.buildErrorMessage('enquanto', this._token));
         } else {
-            skip(MensagemDeErro(" enquanto ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('enquanto', this._token));
+            if (this._token.tag !== Tag.EOF)
                 CmdEnquanto();
 
         }
     }
 
-    // CmdPara → "para" ID CmdAtrib "ate" Expressao "faca" "inicio" ListaCmd "fim"
+    // CmdPara =>'para'ID CmdAtrib'ate'Expressao'faca'"inicio'ListaCmd'fim"
     // 40
     public void CmdPara() {
 
-        if (token.getClasse() == Tag.KW_para) {
-            eat(Tag.KW_para);
+        if (this._token.tag === Tag.PARA) {
+            this.eat(Tag.PARA);
 
-            if (!eat(Tag.ID)) {
-                erroSintatico("Esperado \" ID \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.ID)) {
+                handleError('Esperado \'ID \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
             CmdAtrib();
 
-            if (!eat(Tag.KW_ate)) {
-                erroSintatico("Esperado \" ATE \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.ATE)) {
+                handleError('Esperado \'ATE \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
             Expressao();
 
-            if (!eat(Tag.KW_faca)) {
-                erroSintatico("Esperado \" FAÇA \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.faca)) {
+                handleError('Esperado \'FAÇA \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
-            if (!eat(Tag.KW_inicio)) {
-                erroSintatico("Esperado \" Inicio \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.INICIO)) {
+                handleError('Esperado \'Inicio \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
             ListaCmd();
-            if (!eat(Tag.KW_fim)) {
-                erroSintatico("Esperado \" fim \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.FIM)) {
+                handleError('Esperado \'fim \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
-        } else if (token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_repita || token.getClasse() == Tag.ID
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate) {
-            erroSintatico(MensagemDeErro(" para ", token));
+        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.REPITA || this._token.tag === Tag.ID
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.ATE) {
+            handleError(this.buildErrorMessage('para', this._token));
         } else {
-            skip(MensagemDeErro(" para ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('para', this._token));
+            if (this._token.tag !== Tag.EOF)
                 CmdPara();
 
         }
 
     }// fim CmdPara
 
-    // CmdRepita → "repita" ListaCmd "ate" Expressao 41
+    // CmdRepita =>'repita'ListaCmd'ate'Expressao 41
     public void CmdRepita() {
-        if (token.getClasse() == Tag.KW_repita) {
-            eat(Tag.KW_repita);
+        if (this._token.tag === Tag.REPITA) {
+            this.eat(Tag.REPITA);
 
             ListaCmd();
 
-            if (!eat(Tag.KW_ate)) {
-                erroSintatico("Esperado \" ATE \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.ATE)) {
+                handleError('Esperado \'ATE \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
             Expressao();
 
-        } else if (token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.ID
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate) {
-            erroSintatico(MensagemDeErro(" repita ", token));
+        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.PARA || this._token.tag === Tag.ID
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.ATE) {
+            handleError(this.buildErrorMessage('repita', this._token));
         } else {
-            skip(MensagemDeErro(" repita ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('repita', this._token));
+            if (this._token.tag !== Tag.EOF)
                 CmdRepita();
 
         }
 
     }// fim CmdRepita
 
-    // CmdAtrib → "<--" Expressao ";" 42
+    // CmdAtrib =>'<--'Expressao';'42
     public void CmdAtrib() {
 
-        if (token.getClasse() == Tag.RELOP_ARTIB) {
-            eat(Tag.RELOP_ARTIB);
+        if (this._token.tag === Tag.OP_ARTIB) {
+            this.eat(Tag.OP_ARTIB);
 
             Expressao();
 
-            if (!eat(Tag.SMB_PontoVirgula)) {
-                erroSintatico("Esperado \" ; \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.SB_PVIRG)) {
+                handleError('Esperado \'; \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
-        } else if (token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.ID
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.KW_repita) {
-            erroSintatico(MensagemDeErro(" <--  ", token));
+        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.PARA || this._token.tag === Tag.ID
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA) {
+            handleError(this.buildErrorMessage('<-- ', this._token));
         } else {
-            skip(MensagemDeErro(" <--  ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('<-- ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 CmdAtrib();
 
         }
     }// fim CmdAtrib
 
-    // CmdChamaRotina → "(" RegexExp ")" ";" 43
+    // CmdChamaRotina =>'('RegexExp')'";'43
     public void CmdChamaRotina() {
-        if (token.getClasse() == Tag.SMB_OP) {
-            eat(Tag.SMB_OP);
+        if (this._token.tag === Tag.SB_AP) {
+            this.eat(Tag.SB_AP);
             RegexExp();
 
-            if (!eat(Tag.SMB_CP)) {
-                erroSintatico("Esperado \" ) \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.SB_FP)) {
+                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
-            if (!eat(Tag.SMB_PontoVirgula)) {
-                erroSintatico("Esperado \" ; \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.SB_PVIRG)) {
+                handleError('Esperado \'; \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
-        } else if (token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.ID
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.KW_repita) {
-            erroSintatico(MensagemDeErro(" (  ", token));
+        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.PARA || this._token.tag === Tag.ID
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA) {
+            handleError(this.buildErrorMessage('( ', this._token));
         } else {
-            skip(MensagemDeErro(" (  ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('( ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 CmdChamaRotina();
 
         }
     }// fim CmdChamaRotina
 
-    // RegexExp → Expressao RegexExp’ 44 | ε 45
+    // RegexExp => Expressao RegexExp 44 | ε 45
     public void RegexExp() {
 
-        if (token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_OP || token.getClasse() == Tag.KW_nao
-            || token.getClasse() == Tag.KW_verdadeiro || token.getClasse() == Tag.KW_falso
-            || token.getClasse() == Tag.Numerico || token.getClasse() == Tag.Literal) {
+        if (this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.nao
+            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
+            || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL) {
             Expressao();
             RegexExpLinha();
         }
         // 45
-        else if (token.getClasse() == Tag.SMB_CP)
+        else if (this._token.tag === Tag.SB_FP)
             return;
         else {
-            skip(MensagemDeErro(" id, Numerico, Literal, verdadeiro, falso, Nao, (   ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, (  ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 RegexExp();
 
         }
     }
 
-    // RegexExp’ → , Expressao RegexExp’ 46 | ε 47
+    // RegexExp => , Expressao RegexExp 46 | ε 47
     public void RegexExpLinha() {
-        if (token.getClasse() == Tag.SMB_SEMICOLON) {
-            eat(Tag.SMB_SEMICOLON);
+        if (this._token.tag === Tag.SB_VIRG) {
+            this.eat(Tag.SB_VIRG);
             Expressao();
             RegexExpLinha();
-        } else if (token.getClasse() == Tag.SMB_CP)
+        } else if (this._token.tag === Tag.SB_FP)
             return;
         else {
-            skip(MensagemDeErro(" , ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage(',', this._token));
+            if (this._token.tag !== Tag.EOF)
                 RegexExpLinha();
 
         }
     }
 
-    // CmdEscreva → "escreva" "(" Expressao ")" ";" 48
+    // CmdEscreva =>'escreva'"('Expressao')'";'48
     public void CmdEscreva() {
-        if (token.getClasse() == Tag.KW_escreva) {
-            eat(Tag.KW_escreva);
-            if (!eat(Tag.SMB_OP)) {
-                erroSintatico("Esperado \" ( \", encontrado " + "\"" + token.getLexema() + "\"");
+        if (this._token.tag === Tag.ESCREVA) {
+            this.eat(Tag.ESCREVA);
+            if (!this.eat(Tag.SB_AP)) {
+                handleError('Esperado \'( \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
             Expressao();
 
-            if (!eat(Tag.SMB_CP)) {
-                erroSintatico("Esperado \" ) \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.SB_FP)) {
+                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
-            if (!eat(Tag.SMB_PontoVirgula)) {
-                erroSintatico("Esperado \" ; \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.SB_PVIRG)) {
+                handleError('Esperado \'; \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
-        } else if (token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.ID || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.KW_repita) {
-            erroSintatico(MensagemDeErro(" escreva  ", token));
+        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.PARA || this._token.tag === Tag.ID || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA) {
+            handleError(this.buildErrorMessage('escreva ', this._token));
         } else {
-            skip(MensagemDeErro(" escreva  ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('escreva ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 CmdEscreva();
 
         }
 
     } // fIM cmdeSCREVA
 
-    // CmdLeia → "leia" "(" ID ")" ";" 49
+    // CmdLeia =>'leia'"('id')'";'49
     public void CmdLeia() {
-        if (token.getClasse() == Tag.KW_leia) {
-            eat(Tag.KW_leia);
-            if (!eat(Tag.SMB_OP)) {
-                erroSintatico("Esperado \" ( \", encontrado " + "\"" + token.getLexema() + "\"");
+        if (this._token.tag === Tag.LEIA) {
+            this.eat(Tag.LEIA);
+            if (!this.eat(Tag.SB_AP)) {
+                handleError('Esperado \'( \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
-            if (!eat(Tag.ID)) {
-                erroSintatico("Esperado \" ID \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.ID)) {
+                handleError('Esperado \'ID \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
-            if (!eat(Tag.SMB_CP)) {
-                erroSintatico("Esperado \" ) \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.SB_FP)) {
+                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
 
-            if (!eat(Tag.SMB_PontoVirgula)) {
-                erroSintatico("Esperado \" ; \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.SB_PVIRG)) {
+                handleError('Esperado \'; \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
-        } else if (token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.ID
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_fim
-            || token.getClasse() == Tag.KW_retorne || token.getClasse() == Tag.KW_ate
-            || token.getClasse() == Tag.KW_repita) {
-            erroSintatico(MensagemDeErro(" leia  ", token));
+        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.PARA || this._token.tag === Tag.ID
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.FIM
+            || this._token.tag === Tag.RETORNE || this._token.tag === Tag.ATE
+            || this._token.tag === Tag.REPITA) {
+            handleError(this.buildErrorMessage('leia ', this._token));
         } else {
-            skip(MensagemDeErro(" leia  ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('leia ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 CmdLeia();
 
         }
 
     }
 
-    // Expressao → Exp1 Exp’ 50
+    // Expressao => Exp1 Exp 50
     public void Expressao() {
-        if (token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_OP || token.getClasse() == Tag.KW_nao
-            || token.getClasse() == Tag.KW_verdadeiro || token.getClasse() == Tag.KW_falso
-            || token.getClasse() == Tag.Numerico || token.getClasse() == Tag.Literal) {
+        if (this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.nao
+            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
+            || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL) {
 
             Exp1();
             ExpLinha();
-        } else if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.SMB_CP || token.getClasse() == Tag.KW_se
-            || token.getClasse() == Tag.KW_enquanto || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_repita || token.getClasse() == Tag.KW_escreva
-            || token.getClasse() == Tag.KW_leia || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.SMB_PontoVirgula
-            || token.getClasse() == Tag.SMB_SEMICOLON) {
-            erroSintatico(MensagemDeErro(" id, Numerico, Literal, verdadeiro, falso, Nao, (  ", token));
+        } else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_FP || this._token.tag === Tag.SE
+            || this._token.tag === Tag.ENQUANTO || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.REPITA || this._token.tag === Tag.ESCREVA
+            || this._token.tag === Tag.LEIA || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.SB_PVIRG
+            || this._token.tag === Tag.SB_VIRG) {
+            handleError(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
             return;
         } else {
-            skip(MensagemDeErro(" id, Numerico, Literal, verdadeiro, falso, Nao, (  ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 Expressao();
         }
     }// fim Expressao
 
 	/*
-	 * Exp’ → < Exp1 Exp’ 51 | <= Exp1 Exp’ 52 | > Exp1 Exp’ 53 | >= Exp1 Exp’ 54 |
-	 * = Exp1 Exp’ 55 | <> Exp1 Exp’ 56 | ε 57
+	 * Exp => < Exp1 Exp 51 | <= Exp1 Exp 52 | > Exp1 Exp 53 | >= Exp1 Exp 54 |
+	 * = Exp1 Exp 55 | <> Exp1 Exp 56 | ε 57
 	 */
     public void ExpLinha() {
         // 51
-        if (token.getClasse() == Tag.RELOP_LT) {
-            eat(Tag.RELOP_LT);
+        if (this._token.tag === Tag.RELOP_LT) {
+            this.eat(Tag.RELOP_LT);
             Exp1();
             ExpLinha();
         }
         // 52
-        else if (token.getClasse() == Tag.RELOP_LE) {
-            eat(Tag.RELOP_LE);
+        else if (this._token.tag === Tag.RELOP_LE) {
+            this.eat(Tag.RELOP_LE);
             Exp1();
             ExpLinha();
         }
         // 53
-        else if (token.getClasse() == Tag.RELOP_GT) {
-            eat(Tag.RELOP_GT);
+        else if (this._token.tag === Tag.RELOP_GT) {
+            this.eat(Tag.RELOP_GT);
             Exp1();
             ExpLinha();
         } // 54
-        else if (token.getClasse() == Tag.RELOP_GE) {
-            eat(Tag.RELOP_GE);
+        else if (this._token.tag === Tag.RELOP_GE) {
+            this.eat(Tag.RELOP_GE);
             Exp1();
             ExpLinha();
         } // 55
-        else if (token.getClasse() == Tag.RELOP_EQ) {
-            eat(Tag.RELOP_EQ);
+        else if (this._token.tag === Tag.RELOP_EQ) {
+            this.eat(Tag.RELOP_EQ);
             Exp1();
             ExpLinha();
         } // 56
-        else if (token.getClasse() == Tag.RELOP_LT_GT) {
-            eat(Tag.RELOP_LT_GT);
+        else if (this._token.tag === Tag.RELOP_LT_GT) {
+            this.eat(Tag.RELOP_LT_GT);
             Exp1();
             ExpLinha();
         } // 57
-        else if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.SMB_PontoVirgula
-            || token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_OP || token.getClasse() == Tag.SMB_CP
-            || token.getClasse() == Tag.SMB_SEMICOLON || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_faca || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.KW_repita
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia) {
+        else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_PVIRG
+            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.SB_FP
+            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA) {
             return;
         } else {
-            skip(MensagemDeErro(" <, <=, >, >=, =, <> ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('<, <=, >, >=, =, <>', this._token));
+            if (this._token.tag !== Tag.EOF)
                 ExpLinha();
         }
 
     }
 
-    // Exp1 → Exp2 Exp1’ 58
+    // Exp1 => Exp2 Exp1 58
     public void Exp1() {
-        if (token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_OP || token.getClasse() == Tag.KW_nao
-            || token.getClasse() == Tag.KW_verdadeiro || token.getClasse() == Tag.KW_falso
-            || token.getClasse() == Tag.Numerico || token.getClasse() == Tag.Literal) {
+        if (this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.nao
+            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
+            || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL) {
             Exp2();
             Exp1Linha();
-        } else if (token.getClasse() == Tag.RELOP_LT || token.getClasse() == Tag.RELOP_LE
-            || token.getClasse() == Tag.RELOP_GT || token.getClasse() == Tag.RELOP_GE
-            || token.getClasse() == Tag.RELOP_LT_GT || token.getClasse() == Tag.KW_fim
-            || token.getClasse() == Tag.SMB_CP || token.getClasse() == Tag.KW_se
-            || token.getClasse() == Tag.KW_enquanto || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_repita || token.getClasse() == Tag.KW_escreva
-            || token.getClasse() == Tag.KW_leia || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.SMB_PontoVirgula
-            || token.getClasse() == Tag.SMB_SEMICOLON) {
-            erroSintatico(MensagemDeErro(" id, Numerico, Literal, verdadeiro, falso, Nao, (  ", token));
+        } else if (this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
+            || this._token.tag === Tag.RELOP_GT || this._token.tag === Tag.RELOP_GE
+            || this._token.tag === Tag.RELOP_LT_GT || this._token.tag === Tag.FIM
+            || this._token.tag === Tag.SB_FP || this._token.tag === Tag.SE
+            || this._token.tag === Tag.ENQUANTO || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.REPITA || this._token.tag === Tag.ESCREVA
+            || this._token.tag === Tag.LEIA || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.SB_PVIRG
+            || this._token.tag === Tag.SB_VIRG) {
+            handleError(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
             return;
         } else {
-            skip(MensagemDeErro("id, Numerico, Literal, verdadeiro, falso, Nao, (   ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, (  ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 Exp1();
         }
     }
 
-    // Exp1’ → E Exp2 Exp1’ 59 | Ou Exp2 Exp1’ 60| ε 61
+    // Exp1 => E Exp2 Exp1 59 | Ou Exp2 Exp1 60| ε 61
     public void Exp1Linha() {
         // 59
-        if (token.getClasse() == Tag.KW_e) {
-            eat(Tag.KW_e);
+        if (this._token.tag === Tag.e) {
+            this.eat(Tag.e);
             Exp2();
             Exp1Linha();
         }
         // 60
-        else if (token.getClasse() == Tag.KW_ou) {
-            eat(Tag.KW_ou);
+        else if (this._token.tag === Tag.ou) {
+            this.eat(Tag.ou);
             Exp2();
             Exp1Linha();
         }
         // 61
-        else if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.SMB_PontoVirgula
-            || token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_CP
-            || token.getClasse() == Tag.SMB_SEMICOLON || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_faca || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.KW_repita
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.RELOP_LT || token.getClasse() == Tag.RELOP_LE
-            || token.getClasse() == Tag.RELOP_GT || token.getClasse() == Tag.RELOP_GE
-            || token.getClasse() == Tag.RELOP_EQ || token.getClasse() == Tag.RELOP_LT_GT) {
+        else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_PVIRG
+            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
+            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
+            || this._token.tag === Tag.RELOP_GT || this._token.tag === Tag.RELOP_GE
+            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_LT_GT) {
             return;
         } else {
-            skip(MensagemDeErro(" E, Ou ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('E, Ou', this._token));
+            if (this._token.tag !== Tag.EOF)
                 Exp1Linha();
         }
 
     }// fim Exp1Linha
 
-    // Exp2 → Exp3 Exp2’ 62
+    // Exp2 => Exp3 Exp2 62
     public void Exp2() {
-        if (token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_OP || token.getClasse() == Tag.KW_nao
-            || token.getClasse() == Tag.KW_verdadeiro || token.getClasse() == Tag.KW_falso
-            || token.getClasse() == Tag.Numerico || token.getClasse() == Tag.Literal) {
+        if (this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.nao
+            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
+            || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL) {
 
             Exp3();
             Exp2Linha();
-        } else if (token.getClasse() == Tag.KW_e || token.getClasse() == Tag.KW_ou || token.getClasse() == Tag.KW_fim
-            || token.getClasse() == Tag.SMB_PontoVirgula || token.getClasse() == Tag.ID
-            || token.getClasse() == Tag.SMB_CP || token.getClasse() == Tag.SMB_SEMICOLON
-            || token.getClasse() == Tag.KW_retorne || token.getClasse() == Tag.KW_se
-            || token.getClasse() == Tag.KW_enquanto || token.getClasse() == Tag.KW_faca
-            || token.getClasse() == Tag.KW_para || token.getClasse() == Tag.KW_ate
-            || token.getClasse() == Tag.KW_repita || token.getClasse() == Tag.KW_escreva
-            || token.getClasse() == Tag.KW_leia || token.getClasse() == Tag.RELOP_LT
-            || token.getClasse() == Tag.RELOP_LE || token.getClasse() == Tag.RELOP_GT
-            || token.getClasse() == Tag.RELOP_GE || token.getClasse() == Tag.RELOP_EQ
-            || token.getClasse() == Tag.RELOP_LT_GT) {
+        } else if (this._token.tag === Tag.e || this._token.tag === Tag.ou || this._token.tag === Tag.FIM
+            || this._token.tag === Tag.SB_PVIRG || this._token.tag === Tag.ID
+            || this._token.tag === Tag.SB_FP || this._token.tag === Tag.SB_VIRG
+            || this._token.tag === Tag.RETORNE || this._token.tag === Tag.SE
+            || this._token.tag === Tag.ENQUANTO || this._token.tag === Tag.faca
+            || this._token.tag === Tag.PARA || this._token.tag === Tag.ATE
+            || this._token.tag === Tag.REPITA || this._token.tag === Tag.ESCREVA
+            || this._token.tag === Tag.LEIA || this._token.tag === Tag.RELOP_LT
+            || this._token.tag === Tag.RELOP_LE || this._token.tag === Tag.RELOP_GT
+            || this._token.tag === Tag.RELOP_GE || this._token.tag === Tag.RELOP_EQ
+            || this._token.tag === Tag.RELOP_LT_GT) {
 
-            erroSintatico(MensagemDeErro("id, Numerico, Literal, verdadeiro, falso, Nao, ( ", token));
+            handleError(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, (', this._token));
             return;
         } else {
-            skip(MensagemDeErro(" id, Numerico, Literal, verdadeiro, falso, Nao, (  ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 Exp2();
         }
 
     }// Exp2
 
-    // Exp2’ → + Exp3 Exp2’ 63 | - Exp3 Exp2’ 64 | ε 65
+    // Exp2 => + Exp3 Exp2 63 | - Exp3 Exp2 64 | ε 65
     public void Exp2Linha() {
 
-        if (token.getClasse() == Tag.RELOP_PLUS) {
-            eat(Tag.RELOP_PLUS);
+        if (this._token.tag === Tag.RELOP_PLUS) {
+            this.eat(Tag.RELOP_PLUS);
             Exp3();
             Exp2Linha();
-        } else if (token.getClasse() == Tag.RELOP_MINUS) {
-            eat(Tag.RELOP_MINUS);
+        } else if (this._token.tag === Tag.RELOP_MINUS) {
+            this.eat(Tag.RELOP_MINUS);
             Exp3();
             Exp2Linha();
-        } else if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.SMB_PontoVirgula
-            || token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_CP
-            || token.getClasse() == Tag.SMB_SEMICOLON || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_faca || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.KW_repita
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.RELOP_LT || token.getClasse() == Tag.RELOP_LE
-            || token.getClasse() == Tag.RELOP_GT || token.getClasse() == Tag.RELOP_GE
-            || token.getClasse() == Tag.RELOP_EQ || token.getClasse() == Tag.RELOP_LT_GT
-            || token.getClasse() == Tag.KW_e || token.getClasse() == Tag.KW_ou) {
+        } else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_PVIRG
+            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
+            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
+            || this._token.tag === Tag.RELOP_GT || this._token.tag === Tag.RELOP_GE
+            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_LT_GT
+            || this._token.tag === Tag.e || this._token.tag === Tag.ou) {
             return;
         } else {
-            skip(MensagemDeErro(" +, - ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('+, -', this._token));
+            if (this._token.tag !== Tag.EOF)
                 Exp2Linha();
         }
 
     }// fim Exp2Linha
 
-    // Exp3 → Exp4 Exp3’ 66
+    // Exp3 => Exp4 Exp3 66
     public void Exp3() {
-        if (token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_OP || token.getClasse() == Tag.KW_nao
-            || token.getClasse() == Tag.KW_verdadeiro || token.getClasse() == Tag.KW_falso
-            || token.getClasse() == Tag.Numerico || token.getClasse() == Tag.Literal) {
+        if (this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.nao
+            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
+            || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL) {
             Exp4();
             Exp3Linha();
-        } else if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.SMB_PontoVirgula
-            || token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_CP
-            || token.getClasse() == Tag.SMB_SEMICOLON || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_faca || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.KW_repita
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.RELOP_LT || token.getClasse() == Tag.RELOP_LE
-            || token.getClasse() == Tag.RELOP_GT || token.getClasse() == Tag.RELOP_GE
-            || token.getClasse() == Tag.RELOP_EQ || token.getClasse() == Tag.RELOP_LT_GT
-            || token.getClasse() == Tag.KW_e || token.getClasse() == Tag.KW_ou) {
-            erroSintatico(MensagemDeErro("id, Numerico, Literal, verdadeiro, falso, Nao, ( ", token));
+        } else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_PVIRG
+            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
+            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
+            || this._token.tag === Tag.RELOP_GT || this._token.tag === Tag.RELOP_GE
+            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_LT_GT
+            || this._token.tag === Tag.e || this._token.tag === Tag.ou) {
+            handleError(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, (', this._token));
             return;
         } else {
-            skip(MensagemDeErro(" id, Numerico, Literal, verdadeiro, falso, Nao, (  ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 Exp3();
         }
     }// fim Exp3
 
-    // Exp3’ →* Exp4 Exp3’ 67 | / Exp4 Exp3’ 68 | ε 69
+    // Exp3 =>* Exp4 Exp3 67 | / Exp4 Exp3 68 | ε 69
     public void Exp3Linha() {
         // 67
-        if (token.getClasse() == Tag.RELOP_MULT) {
-            eat(Tag.RELOP_MULT);
+        if (this._token.tag === Tag.RELOP_MULT) {
+            this.eat(Tag.RELOP_MULT);
             Exp4();
             Exp3Linha();
-        } else if (token.getClasse() == Tag.RELOP_DIV) {
-            eat(Tag.RELOP_DIV);
+        } else if (this._token.tag === Tag.RELOP_DIV) {
+            this.eat(Tag.RELOP_DIV);
             Exp4();
             Exp3Linha();
-        } else if (token.getClasse() == Tag.KW_fim || token.getClasse() == Tag.SMB_PontoVirgula
-            || token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_CP
-            || token.getClasse() == Tag.SMB_SEMICOLON || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_faca || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.KW_repita
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.RELOP_LT || token.getClasse() == Tag.RELOP_LE
-            || token.getClasse() == Tag.RELOP_GT || token.getClasse() == Tag.RELOP_GE
-            || token.getClasse() == Tag.RELOP_EQ || token.getClasse() == Tag.RELOP_LT_GT
-            || token.getClasse() == Tag.KW_e || token.getClasse() == Tag.KW_ou
-            || token.getClasse() == Tag.RELOP_PLUS || token.getClasse() == Tag.RELOP_MINUS) {
+        } else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_PVIRG
+            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
+            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
+            || this._token.tag === Tag.RELOP_GT || this._token.tag === Tag.RELOP_GE
+            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_LT_GT
+            || this._token.tag === Tag.e || this._token.tag === Tag.ou
+            || this._token.tag === Tag.RELOP_PLUS || this._token.tag === Tag.RELOP_MINUS) {
             return;
         } else {
-            skip(MensagemDeErro(" * , / ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('* , /', this._token));
+            if (this._token.tag !== Tag.EOF)
                 Exp3Linha();
         }
 
     }
 
-    // Exp4 → id Exp4’ 70 | Numerico 71 | Litetal 72 | “verdadeiro” 73 | “falso” 74|
+    // Exp4 => id Exp4 70 | Numerico 71 | Litetal 72 | “verdadeiro” 73 | “falso” 74|
     // OpUnario Expressao 75| “(“ Expressao “)” 76
     public void Exp4() {
         // 70
-        if (token.getClasse() == Tag.ID) {
-            eat(Tag.ID);
+        if (this._token.tag === Tag.ID) {
+            this.eat(Tag.ID);
             Exp4Linha();
         } // 71
-        else if (token.getClasse() == Tag.Numerico) {
-            eat(Tag.Numerico);
+        else if (this._token.tag === Tag.NUMERICO) {
+            this.eat(Tag.NUMERICO);
         } // 72
-        else if (token.getClasse() == Tag.Literal) {
-            eat(Tag.Literal);
+        else if (this._token.tag === Tag.LITERAL) {
+            this.eat(Tag.LITERAL);
         } // 73
-        else if (token.getClasse() == Tag.KW_verdadeiro) {
-            eat(Tag.KW_verdadeiro);
+        else if (this._token.tag === Tag.verdadeiro) {
+            this.eat(Tag.verdadeiro);
         } // 74
-        else if (token.getClasse() == Tag.KW_falso) {
-            eat(Tag.KW_falso);
+        else if (this._token.tag === Tag.falso) {
+            this.eat(Tag.falso);
 
         } // 75
-        else if (token.getClasse() == Tag.KW_nao) {
+        else if (this._token.tag === Tag.nao) {
             OpUnario();
             Expressao();
         } // 76
-        else if (token.getClasse() == Tag.SMB_OP) {
-            if (!eat(Tag.SMB_OP)) {
-                erroSintatico("Esperado \" ( \", encontrado " + "\"" + token.getLexema() + "\"");
+        else if (this._token.tag === Tag.SB_AP) {
+            if (!this.eat(Tag.SB_AP)) {
+                handleError('Esperado \'( \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
             Expressao();
-            if (!eat(Tag.SMB_CP)) {
-                erroSintatico("Esperado \" ) \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.SB_FP)) {
+                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
-        } else if (token.getClasse() == Tag.KW_declare || token.getClasse() == Tag.SMB_PontoVirgula
-            || token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_CP
-            || token.getClasse() == Tag.SMB_SEMICOLON || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_faca || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.KW_repita
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.KW_e || token.getClasse() == Tag.KW_ou || token.getClasse() == Tag.RELOP_LT
-            || token.getClasse() == Tag.RELOP_LE || token.getClasse() == Tag.RELOP_GT
-            || token.getClasse() == Tag.RELOP_GE || token.getClasse() == Tag.RELOP_LT_GT
-            || token.getClasse() == Tag.RELOP_EQ || token.getClasse() == Tag.RELOP_PLUS
-            || token.getClasse() == Tag.RELOP_MINUS || token.getClasse() == Tag.RELOP_DIV
-            || token.getClasse() == Tag.RELOP_MULT) {
-            erroSintatico(MensagemDeErro(" id, Numerico, Literal, verdadeiro, falso, Nao, (  ", token));
+        } else if (this._token.tag === Tag.declare || this._token.tag === Tag.SB_PVIRG
+            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
+            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.e || this._token.tag === Tag.ou || this._token.tag === Tag.RELOP_LT
+            || this._token.tag === Tag.RELOP_LE || this._token.tag === Tag.RELOP_GT
+            || this._token.tag === Tag.RELOP_GE || this._token.tag === Tag.RELOP_LT_GT
+            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_PLUS
+            || this._token.tag === Tag.RELOP_MINUS || this._token.tag === Tag.RELOP_DIV
+            || this._token.tag === Tag.RELOP_MULT) {
+            handleError(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
             return;
         } else {
-            skip(MensagemDeErro(" id, Numerico, Literal, verdadeiro, falso, Nao, (  ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 Exp4();
         }
 
     }
 
-    // Exp4’ → “(“ RegexExp ”)” 77 | ε 78
+    // Exp4 => “(“ RegexExp ”)” 77 | ε 78
     public void Exp4Linha() {
         // 77
-        if (token.getClasse() == Tag.SMB_OP) {
-            if (!eat(Tag.SMB_OP)) {
-                erroSintatico("Esperado \" ( \", encontrado " + "\"" + token.getLexema() + "\"");
+        if (this._token.tag === Tag.SB_AP) {
+            if (!this.eat(Tag.SB_AP)) {
+                handleError('Esperado \'( \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
             RegexExp();
-            if (!eat(Tag.SMB_CP)) {
-                erroSintatico("Esperado \" ) \", encontrado " + "\"" + token.getLexema() + "\"");
+            if (!this.eat(Tag.SB_FP)) {
+                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
             }
         }
         // 78
-        else if (token.getClasse() == Tag.KW_declare || token.getClasse() == Tag.SMB_PontoVirgula
-            || token.getClasse() == Tag.ID || token.getClasse() == Tag.SMB_CP
-            || token.getClasse() == Tag.SMB_SEMICOLON || token.getClasse() == Tag.KW_retorne
-            || token.getClasse() == Tag.KW_se || token.getClasse() == Tag.KW_enquanto
-            || token.getClasse() == Tag.KW_faca || token.getClasse() == Tag.KW_para
-            || token.getClasse() == Tag.KW_ate || token.getClasse() == Tag.KW_repita
-            || token.getClasse() == Tag.KW_escreva || token.getClasse() == Tag.KW_leia
-            || token.getClasse() == Tag.KW_e || token.getClasse() == Tag.KW_ou || token.getClasse() == Tag.RELOP_LT
-            || token.getClasse() == Tag.RELOP_LE || token.getClasse() == Tag.RELOP_GT
-            || token.getClasse() == Tag.RELOP_GE || token.getClasse() == Tag.RELOP_LT_GT
-            || token.getClasse() == Tag.RELOP_EQ || token.getClasse() == Tag.RELOP_PLUS
-            || token.getClasse() == Tag.RELOP_MINUS || token.getClasse() == Tag.RELOP_DIV
-            || token.getClasse() == Tag.RELOP_MULT) {
+        else if (this._token.tag === Tag.declare || this._token.tag === Tag.SB_PVIRG
+            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
+            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
+            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
+            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
+            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
+            || this._token.tag === Tag.e || this._token.tag === Tag.ou || this._token.tag === Tag.RELOP_LT
+            || this._token.tag === Tag.RELOP_LE || this._token.tag === Tag.RELOP_GT
+            || this._token.tag === Tag.RELOP_GE || this._token.tag === Tag.RELOP_LT_GT
+            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_PLUS
+            || this._token.tag === Tag.RELOP_MINUS || this._token.tag === Tag.RELOP_DIV
+            || this._token.tag === Tag.RELOP_MULT) {
             return;
         } else {
-            skip(MensagemDeErro(" (  ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('( ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 Exp4Linha();
         }
 
     }
 
-    // OpUnario → "Nao" 79
+    // OpUnario =>'Nao'79
     public void OpUnario() {
-        if (token.getClasse() == Tag.KW_nao) {
-            eat(Tag.KW_nao);
-        } else if (token.getClasse() == Tag.ID || token.getClasse() == Tag.Numerico || token.getClasse() == Tag.Literal
-            || token.getClasse() == Tag.KW_verdadeiro || token.getClasse() == Tag.KW_falso
-            || token.getClasse() == Tag.SMB_OP) {
+        if (this._token.tag === Tag.nao) {
+            this.eat(Tag.nao);
+        } else if (this._token.tag === Tag.ID || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL
+            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
+            || this._token.tag === Tag.SB_AP) {
 
-            erroSintatico(MensagemDeErro("nao", token));
+            handleError(this.buildErrorMessage('nao', this._token));
             return;
         } else {
-            skip(MensagemDeErro(" nao  ", token));
-            if (token.getClasse() != Tag.EOF)
+            this.skip(this.buildErrorMessage('nao ', this._token));
+            if (this._token.tag !== Tag.EOF)
                 OpUnario();
         }
     }
