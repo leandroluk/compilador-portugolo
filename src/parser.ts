@@ -599,186 +599,198 @@ export class Parser {
      */
     public CmdEnquanto(): void {
         if (this._token.tag === Tag.ENQUANTO) {
+
             this.eat(Tag.ENQUANTO);
-            if (!this.eat(Tag.SB_AP)) {
-                handleError('Esperado \'( \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-            Expressao();
 
-            if (!this.eat(Tag.SB_FP)) {
-                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            if (!this.eat(Tag.SB_AP))
+                this.handleError(this.buildErrorMessage('('));
 
-            if (!this.eat(Tag.faca)) {
-                handleError('Esperado \'Faça \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            this.Expressao();
 
-            if (!this.eat(Tag.INICIO)) {
-                handleError('Esperado \'INICIO \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            if (!this.eat(Tag.SB_FP))
+                this.handleError(this.buildErrorMessage(')'));
 
-            ListaCmd();
 
-            if (!this.eat(Tag.FIM)) {
-                handleError('Esperado \'FIM \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            if (!this.eat(Tag.FACA))
+                this.handleError(this.buildErrorMessage('faca'));
 
-        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.PARA
-            || this._token.tag === Tag.REPITA || this._token.tag === Tag.ID
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.ATE) {
-            handleError(this.buildErrorMessage('enquanto', this._token));
+
+            if (!this.eat(Tag.INICIO))
+                this.handleError(this.buildErrorMessage('inicio'));
+
+            this.ListaCmd();
+
+            if (!this.eat(Tag.FIM))
+                this.handleError(this.buildErrorMessage('fim'));
+
+        } else if ([
+            Tag.SE, Tag.PARA, Tag.REPITA, Tag.ID, Tag.ESCREVA, Tag.LEIA,
+            Tag.FIM, Tag.RETORNE, Tag.ATE
+        ].indexOf(this._token.tag) > -1) {
+            this.handleError(this.buildErrorMessage('enquanto'));
         } else {
-            this.skip(this.buildErrorMessage('enquanto', this._token));
+
+            this.skip(this.buildErrorMessage('enquanto'));
+
             if (this._token.tag !== Tag.EOF)
-                CmdEnquanto();
+                this.CmdEnquanto();
 
         }
     }
 
-    // CmdPara =>'para'ID CmdAtrib'ate'Expressao'faca'"inicio'ListaCmd'fim"
-    // 40
-    public void CmdPara() {
-
+    /**
+     * CmdPara => "para" ID CmdAtrib "ate" Expressao "faca" "inicio" 
+     *            ListaCmd "fim"
+     */
+    public CmdPara(): void {
         if (this._token.tag === Tag.PARA) {
+
             this.eat(Tag.PARA);
 
-            if (!this.eat(Tag.ID)) {
-                handleError('Esperado \'ID \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            if (!this.eat(Tag.ID))
+                this.handleError(this.buildErrorMessage('id'));
 
-            CmdAtrib();
+            this.CmdAtrib();
 
-            if (!this.eat(Tag.ATE)) {
-                handleError('Esperado \'ATE \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            if (!this.eat(Tag.ATE))
+                this.handleError(this.buildErrorMessage('ate'));
 
-            Expressao();
+            this.Expressao();
 
-            if (!this.eat(Tag.faca)) {
-                handleError('Esperado \'FAÇA \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            if (!this.eat(Tag.FACA))
+                this.handleError(this.buildErrorMessage('faca'));
 
-            if (!this.eat(Tag.INICIO)) {
-                handleError('Esperado \'Inicio \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-            ListaCmd();
-            if (!this.eat(Tag.FIM)) {
-                handleError('Esperado \'fim \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            if (!this.eat(Tag.INICIO))
+                this.handleError(this.buildErrorMessage('inicio'));
 
-        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.REPITA || this._token.tag === Tag.ID
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.ATE) {
-            handleError(this.buildErrorMessage('para', this._token));
+            this.ListaCmd();
+
+            if (!this.eat(Tag.FIM))
+                this.handleError(this.buildErrorMessage('fim'));
+
+        } else if ([
+            Tag.SE, Tag.ENQUANTO, , Tag.REPITA, Tag.ID, Tag.ESCREVA, Tag.LEIA,
+            Tag.FIM, Tag.RETORNE, Tag.ATE
+        ].indexOf(this._token.tag) > -1) {
+            this.handleError(this.buildErrorMessage('para'));
         } else {
-            this.skip(this.buildErrorMessage('para', this._token));
+
+            this.skip(this.buildErrorMessage('para'));
+
             if (this._token.tag !== Tag.EOF)
-                CmdPara();
+                this.CmdPara();
 
         }
+    }
 
-    }// fim CmdPara
-
-    // CmdRepita =>'repita'ListaCmd'ate'Expressao 41
-    public void CmdRepita() {
+    /**
+     * CmdRepita => "repita" ListaCmd "ate" Expressao
+     */
+    public CmdRepita(): void {
         if (this._token.tag === Tag.REPITA) {
+
             this.eat(Tag.REPITA);
 
-            ListaCmd();
+            this.ListaCmd();
 
-            if (!this.eat(Tag.ATE)) {
-                handleError('Esperado \'ATE \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            if (!this.eat(Tag.ATE))
+                this.handleError(this.buildErrorMessage('ate'));
 
-            Expressao();
+            this.Expressao();
 
-        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.PARA || this._token.tag === Tag.ID
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.ATE) {
-            handleError(this.buildErrorMessage('repita', this._token));
+        } else if ([
+            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ID, Tag.ESCREVA, Tag.LEIA,
+            Tag.FIM, Tag.RETORNE, Tag.ATE
+        ].indexOf(this._token.tag) > -1) {
+            this.handleError(this.buildErrorMessage('repita'));
         } else {
-            this.skip(this.buildErrorMessage('repita', this._token));
+            this.skip(this.buildErrorMessage('repita'));
             if (this._token.tag !== Tag.EOF)
-                CmdRepita();
+                this.CmdRepita();
 
         }
+    }
 
-    }// fim CmdRepita
-
-    // CmdAtrib =>'<--'Expressao';'42
-    public void CmdAtrib() {
-
+    /**
+     * CmdAtrib => "<--" Expressao ";"
+     */
+    public CmdAtrib(): void {
         if (this._token.tag === Tag.OP_ARTIB) {
+
             this.eat(Tag.OP_ARTIB);
 
-            Expressao();
+            this.Expressao();
 
-            if (!this.eat(Tag.SB_PVIRG)) {
-                handleError('Esperado \'; \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.PARA || this._token.tag === Tag.ID
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA) {
-            handleError(this.buildErrorMessage('<-- ', this._token));
+            if (!this.eat(Tag.SB_PVIRG))
+                this.handleError(this.buildErrorMessage(';'));
+
+        } else if ([
+            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ID, Tag.ESCREVA,
+            Tag.LEIA, Tag.FIM, Tag.RETORNE, Tag.ATE, Tag.REPITA
+        ].indexOf(this._token.tag) > -1) {
+            this.handleError(this.buildErrorMessage('<-- '));
         } else {
-            this.skip(this.buildErrorMessage('<-- ', this._token));
+
+            this.skip(this.buildErrorMessage('<-- '));
+
             if (this._token.tag !== Tag.EOF)
-                CmdAtrib();
+                this.CmdAtrib();
 
         }
-    }// fim CmdAtrib
+    }
 
-    // CmdChamaRotina =>'('RegexExp')'";'43
-    public void CmdChamaRotina() {
+    /**
+     * CmdChamaRotina => "(" RegexExp ")" ";"
+     */
+    public CmdChamaRotina(): void {
         if (this._token.tag === Tag.SB_AP) {
+
             this.eat(Tag.SB_AP);
-            RegexExp();
+            this.RegexExp();
 
-            if (!this.eat(Tag.SB_FP)) {
-                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-            if (!this.eat(Tag.SB_PVIRG)) {
-                handleError('Esperado \'; \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            if (!this.eat(Tag.SB_FP))
+                this.handleError(this.buildErrorMessage(')'));
 
-        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.PARA || this._token.tag === Tag.ID
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA) {
-            handleError(this.buildErrorMessage('( ', this._token));
+            if (!this.eat(Tag.SB_PVIRG))
+                this.handleError(this.buildErrorMessage(';'));
+
+        } else if ([
+            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ID, Tag.ESCREVA, Tag.LEIA,
+            Tag.FIM, Tag.RETORNE, Tag.ATE, Tag.REPITA
+        ].indexOf(this._token.tag) > -1) {
+            this.handleError(this.buildErrorMessage('( '));
         } else {
-            this.skip(this.buildErrorMessage('( ', this._token));
+
+            this.skip(this.buildErrorMessage('( '));
+
             if (this._token.tag !== Tag.EOF)
-                CmdChamaRotina();
+                this.CmdChamaRotina();
 
         }
-    }// fim CmdChamaRotina
+    }
 
-    // RegexExp => Expressao RegexExp 44 | ε 45
-    public void RegexExp() {
-
-        if (this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.nao
-            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
-            || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL) {
-            Expressao();
-            RegexExpLinha();
+    /**
+     * RegexExp => Expressao RegexExp | ε
+     */
+    public RegexExp(): void {
+        if ([
+            Tag.ID, Tag.SB_AP, Tag.NAO, Tag.VERDADEIRO, Tag.FALSO,
+            Tag.NUMERICO, Tag.LITERAL
+        ].indexOf(this._token.tag) > -1) {
+            this.Expressao();
+            this.RegexExpLinha();
         }
-        // 45
         else if (this._token.tag === Tag.SB_FP)
             return;
         else {
-            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, (  ', this._token));
+
+            this.skip(this.buildErrorMessage(
+                'id, Numerico, Literal, verdadeiro, falso, Nao, ('
+            ));
+
             if (this._token.tag !== Tag.EOF)
-                RegexExp();
+
+                this.RegexExp();
 
         }
     }
@@ -929,7 +941,7 @@ export class Parser {
             || this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.SB_FP
             || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
             || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
             || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
             || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA) {
             return;
@@ -985,7 +997,7 @@ export class Parser {
             || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
             || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
             || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
             || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
             || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
             || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
@@ -1012,7 +1024,7 @@ export class Parser {
             || this._token.tag === Tag.SB_PVIRG || this._token.tag === Tag.ID
             || this._token.tag === Tag.SB_FP || this._token.tag === Tag.SB_VIRG
             || this._token.tag === Tag.RETORNE || this._token.tag === Tag.SE
-            || this._token.tag === Tag.ENQUANTO || this._token.tag === Tag.faca
+            || this._token.tag === Tag.ENQUANTO || this._token.tag === Tag.FACA
             || this._token.tag === Tag.PARA || this._token.tag === Tag.ATE
             || this._token.tag === Tag.REPITA || this._token.tag === Tag.ESCREVA
             || this._token.tag === Tag.LEIA || this._token.tag === Tag.RELOP_LT
@@ -1045,7 +1057,7 @@ export class Parser {
             || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
             || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
             || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
             || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
             || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
             || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
@@ -1072,7 +1084,7 @@ export class Parser {
             || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
             || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
             || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
             || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
             || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
             || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
@@ -1103,7 +1115,7 @@ export class Parser {
             || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
             || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
             || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
             || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
             || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
             || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
@@ -1157,7 +1169,7 @@ export class Parser {
             || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
             || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
             || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
             || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
             || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
             || this._token.tag === Tag.e || this._token.tag === Tag.ou || this._token.tag === Tag.RELOP_LT
@@ -1193,7 +1205,7 @@ export class Parser {
             || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
             || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
             || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.faca || this._token.tag === Tag.PARA
+            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
             || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
             || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
             || this._token.tag === Tag.e || this._token.tag === Tag.ou || this._token.tag === Tag.RELOP_LT
