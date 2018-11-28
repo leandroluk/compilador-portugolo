@@ -29,26 +29,26 @@ export enum Tag {
     NULO,               // NULL
 
     // PARAVRAS RESERVADAS
-    ID,                 // ID
-    KW_ALGORITMO,       // ALGORITMO
-    KW_DECLARE,         // DECLARE
-    KW_INICIO,          // INICIO
-    KW_FIM,             // FIM
-    KW_SUBROTINA,       // SUBROTINA
-    KW_RETORNE,         // RETORNE
-    KW_SE,              // SE
-    KW_SENAO,           // SENAO
-    KW_ENQUANTO,        // ENQUANTO
-    KW_PARA,            // PARA
-    KW_ATE,             // ATE
-    KW_FACA,            // FACA
-    KW_REPITA,          // REPITA
-    KW_ESCREVA,         // ESCREVA
-    KW_LEIA,            // LEIA
-    KW_VERDADEIRO,      // VERDADEIRO
-    KW_FALSO,           // FALSO
-    KW_OU,              // OU
-    KW_E,               // E
-    KW_NAO              // NAO
+    ID,              // ID
+    ALGORITMO,       // ALGORITMO
+    DECLARE,         // DECLARE
+    INICIO,          // INICIO
+    FIM,             // FIM
+    SUBROTINA,       // SUBROTINA
+    RETORNE,         // RETORNE
+    SE,              // SE
+    SENAO,           // SENAO
+    ENQUANTO,        // ENQUANTO
+    PARA,            // PARA
+    ATE,             // ATE
+    FACA,            // FACA
+    REPITA,          // REPITA
+    ESCREVA,         // ESCREVA
+    LEIA,            // LEIA
+    VERDADEIRO,      // VERDADEIRO
+    FALSO,           // FALSO
+    OU,              // OU
+    E,               // E
+    NAO              // NAO
 
 }

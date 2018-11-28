@@ -187,7 +187,9 @@ export class Lexem {
                     if (c === '=') {
                         state = 0;
                         return new Token(Tag.OP_LE, '<=', +this._row, this._col);
-                    } else {//q7
+                    }
+                    //q7
+                    else {
                         state = 0;
                         this.lookABack();
                         return new Token(Tag.OP_LT, '<', this._row, this._col);
@@ -226,12 +228,13 @@ export class Lexem {
                     if (c === '=') {
                         state = 0;
                         return new Token(Tag.OP_LE, '>=', this._row, this._col);
-                    } else {// q10
+                    }
+                    // q10
+                    else {
                         state = 0;
                         this.lookABack();
                         return new Token(Tag.OP_GT, '>', this._row, this._col);
                     }
-                    break;
                 case 9:
                     if (this.checkLinebreak(c))
                         state = 0;
@@ -272,7 +275,9 @@ export class Lexem {
                         this.catchError(c, 'Numerico', this._row, this._col);
                         this.checkLinebreak(c);
 
-                    } else {//q17
+                    }
+                    //q17
+                    else {
                         word += c;
                         state = 0;
                         this._errors = [];
@@ -281,7 +286,8 @@ export class Lexem {
 
                     break;
                 case 18:
-                    if (c === '"') { // q20
+                    // q20    
+                    if (c === '"') {
                         if (this._errors.length === 0) {
                             this.catchError(c, 'ASCII', this._row, this._col);
                         } else {
@@ -290,52 +296,58 @@ export class Lexem {
                             this._errors = [];
                             return new Token(Tag.LITERAL, word, this._row, this._col);
                         }
-                    }else if( this._lookahead === this._eof){
+                    } else if (this._lookahead === this._eof) {
                         this.catchError('$', ' ' + '"' + ' ', this._row, this._col);
                         return new Token(Tag.EOF, "EOF", this._row, this._col);
-                    }else if (/^[\x00-\x7F]/.test(c)) {
+                    } else if (/^[\x00-\x7F]/.test(c)) {
                         this.checkLinebreak(c);
                         word += c;
                         this._errors.push(new Error('esse caracter não pe ASCII'));
                     }
                     break;
-                case 26: 
-                    if(c === '=') {
-                        return new Token(Tag.OP_GE, '>=' , this._row, this._col);
+                case 26:
+                    if (c === '=') {
+                        return new Token(Tag.OP_GE, '>=', this._row, this._col);
                     } else {
                         state = 0;
                         this.lookABack();
                         return new Token(Tag.OP_GT, '>', this._row, this._col);
                     }
-                case 29: 
-                    if(c === '-'){//q33
+                case 29:
+                    //q33
+                    if (c === '-') {
                         state = 33;
-                    }else if (c === '='){//q31
+                    }
+                    //q31
+                    else if (c === '=') {
                         return new Token(Tag.OP_LE, "<=", this._row, this._col);
-                    }else if (c === '>'){//q30
+                    }
+                    //q30
+                    else if (c === '>') {
                         return new Token(Tag.OP_LT_GT, "<>", this._row, this._col);
-                    }else {
+                    } else {
                         state = 0;
                         this.lookABack();
                         return new Token(Tag.OP_LT, "<", this._row, this._col);
                     }
-                break;
-                case 33: 
-                if (c === '-') {//q34
-                    this._errors = [];
-					return new Token(Tag.OP_ARTIB, "<--", this._row, this._col);
-                } else {
-                    if (this._errors.length === 0) {
-                        this.catchError(c, ' - ', this._row, this._col);
+                    break;
+                case 33:
+                    //q34
+                    if (c === '-') {
+                        this._errors = [];
+                        return new Token(Tag.OP_ARTIB, "<--", this._row, this._col);
                     } else {
-                        if(this._lookahead === this._eof) {
-                            this.lookABack();
-                            state = 0;
+                        if (this._errors.length === 0) {
+                            this.catchError(c, ' - ', this._row, this._col);
+                        } else {
+                            if (this._lookahead === this._eof) {
+                                this.lookABack();
+                                state = 0;
+                            }
                         }
+                        this.checkLinebreak(c);
                     }
-                    this.checkLinebreak(c);
-                }
-                break;
+                    break;
             }
 
         }
