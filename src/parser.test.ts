@@ -3,7 +3,7 @@ import { Lexem } from './lexem';
 
 const file = `
     ALGORITMO 
-        DECLARE a = "ola mundo"
+        DECLARE a 
     FIM ALGORITMO
 `;
 
