@@ -57,7 +57,7 @@ export class Ts {
 
         let result: string = '';
 
-        for (let i: 0; i < tsKeys.length; i++) {
+        for (let i = 0; i < tsKeys.length; i++) {
             result += `posição ${i + 1}:\t ${this._ts[tsKeys[i]].toString()}\n`;
         }
 

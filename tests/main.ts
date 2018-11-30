@@ -1,24 +1,18 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Lexem } from '../src/Lexem';
-import { Token } from '../src/Token';
+
+import { Lexem } from '../src/lexem';
+import { Parser } from '../src/parser';
+import { Ts } from '../src/ts';
 
 
 let file = fs.readFileSync(path.join(__dirname, 'arquivo_de_teste.ptgl')).toString();
-let l = new Lexem(`// a #{\n} a`);
 
-let end = false;
+const lexem = new Lexem(file);
+//const parser = new Parser(lexem);
+//parser.Compilador();
 
-debugger;
+const ts = new Ts();
 
-while (!0) {
-
-    let token: Token = l.next();
-    console.log(token.toString());
-
-    if (token.name == "END_OF_FILE") {
-        break;
-    }
-
-}
+ts.toConsole();
 
