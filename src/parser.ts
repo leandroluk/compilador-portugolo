@@ -10,7 +10,8 @@ export class Parser {
 
     constructor(lexem: Lexem) {
         this._lexem = lexem;
-        this._token = lexem.next();
+        this._token = this._lexem.next();
+        this._errors = []
     }
 
     /**
@@ -26,7 +27,7 @@ export class Parser {
      * @param tag 
      */
     public eat(tag: Tag) {
-        if (this._token.tag === tag) {
+        if (this.isTag(tag)) {
             this.next();
             return true;
         }
@@ -76,12 +77,21 @@ export class Parser {
     }
 
     /**
+     * verifica se a tag que está declarada no token existe na lista de
+     * tag's enviadas para verificação
+     * @param tags 
+     */
+    public isTag(...tags: Tag[]): boolean {
+        return tags.indexOf(this._token.tag) > -1;
+    }
+
+    /**
      * Compilador => Programa EOF
      */
     public Compilador(): void {
 
-        if (this._token.tag !== Tag.ALGORITMO)
-            this.skip(this.buildErrorMessage('algoritmo', this._token));
+        if (!this.isTag(Tag.ALGORITMO))
+            this.skip(this.buildErrorMessage('ALGORITMO'));
 
         this.Programa();
 
@@ -94,16 +104,16 @@ export class Parser {
     public Programa(): void {
 
         if (!this.eat(Tag.ALGORITMO))
-            this.skip(this.buildErrorMessage('algoritimo'));
+            this.skip(this.buildErrorMessage('ALGORITMO'));
 
         this.RegexDeclVar();
         this.ListaCmd();
 
         if (!this.eat(Tag.FIM))
-            this.handleError(this.buildErrorMessage('fim'));
+            this.handleError(this.buildErrorMessage('FIM'));
 
         if (!this.eat(Tag.ALGORITMO))
-            this.handleError(this.buildErrorMessage('algoritmo'));
+            this.handleError(this.buildErrorMessage('ALGORITMO'));
 
         this.ListaRotina();
 
@@ -113,7 +123,7 @@ export class Parser {
      * RegexDeclVar => "declare" Tipo ListaID ";" DeclaraVar | ε
      */
     public RegexDeclVar(): void {
-        if (this._token.tag === Tag.DECLARE) {
+        if (this.isTag(Tag.DECLARE)) {
 
             this.eat(Tag.DECLARE);
             this.Tipo();
@@ -124,16 +134,15 @@ export class Parser {
 
             this.DeclaraVar();
 
-        } else if ([
+        } else if (this.isTag(
             Tag.ALGORITMO, Tag.ID, Tag.RETORNE, Tag.SE, Tag.ENQUANTO,
             Tag.PARA, Tag.REPITA, Tag.ESCREVA, Tag.LEIA
-        ].indexOf(this._token.tag) > -1) {
-            return
+        )) {
         } else {
             this.skip(this.buildErrorMessage(
-                'declare, se, enquanto, para, repita, id, escreva, leia'
+                'DECLARE, SE, ENQUANTO, PARA, REPITA, ID, ESCREVA, LEIA'
             ));
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.RegexDeclVar();
         }
     }
@@ -143,9 +152,9 @@ export class Parser {
      */
     public DeclaraVar(): void {
 
-        if ([
+        if (this.isTag(
             Tag.LOGICO, Tag.NUMERICO, Tag.LITERAL, Tag.NULO
-        ].indexOf(this._token.tag) > -1) {
+        )) {
             this.Tipo();
             this.ListaID();
 
@@ -154,19 +163,19 @@ export class Parser {
 
             this.DeclaraVar();
         }
-        else if ([
+        else if (this.isTag(
             Tag.FIM, Tag.ID, Tag.RETORNE, Tag.SE, Tag.ENQUANTO,
             Tag.PARA, Tag.REPITA, Tag.ESCREVA, Tag.LEIA
-        ].indexOf(this._token.tag) > -1) {
+        )) {
             return;
         }
         else {
 
             this.skip(this.buildErrorMessage(
-                'logico, numerico, literal, nulo'
+                'LOGICO, NUMERICO, LITERAL, NULO'
             ));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.DeclaraVar();
 
         }
@@ -177,13 +186,13 @@ export class Parser {
      * ListaRotina => ListaRotina
      */
     public ListaRotina(): void {
-        if ([Tag.SUBROTINA, Tag.EOF].indexOf(this._token.tag) > -1)
+        if (this.isTag(Tag.SUBROTINA, Tag.EOF))
             this.ListaRotinaLinha();
         else {
 
-            this.skip(this.buildErrorMessage('subrotina'));
+            this.skip(this.buildErrorMessage('SUBROTINA'));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.ListaRotina();
 
         }
@@ -194,13 +203,13 @@ export class Parser {
      */
     public ListaRotinaLinha(): void {
 
-        if (this._token.tag === Tag.SUBROTINA) {
+        if (this.isTag(Tag.SUBROTINA)) {
             this.Rotina();
             this.ListaRotinaLinha();
-        } else if (this._token.tag === Tag.EOF) {
+        } else if (this.isTag(Tag.EOF)) {
             return;
         } else {
-            this.skip(this.buildErrorMessage('subrotina'));
+            this.skip(this.buildErrorMessage('SUBROTINA'));
             this.ListaRotinaLinha();
         }
 
@@ -211,12 +220,12 @@ export class Parser {
      *           ListaCmd Retorno "fim" "subrotina"
      */
     public Rotina(): void {
-        if (this._token.tag === Tag.SUBROTINA) {
+        if (this.isTag(Tag.SUBROTINA)) {
 
             this.eat(Tag.SUBROTINA);
 
             if (!this.eat(Tag.ID))
-                this.handleError(this.buildErrorMessage('id'));
+                this.handleError(this.buildErrorMessage('ID'));
             if (!this.eat(Tag.SB_AP))
                 this.handleError(this.buildErrorMessage('('));
 
@@ -230,19 +239,17 @@ export class Parser {
             this.Retorno();
 
             if (!this.eat(Tag.FIM))
-                this.handleError(this.buildErrorMessage('fim'));
+                this.handleError(this.buildErrorMessage('FIM'));
 
             if (!this.eat(Tag.SUBROTINA))
-                this.handleError(this.buildErrorMessage('subrotina'));
+                this.handleError(this.buildErrorMessage('SUBROTINA'));
 
         }
-        else if (this._token.tag === Tag.EOF) {
-            this.handleError(this.buildErrorMessage('subrotina'));
-            return;
+        else if (this.isTag(Tag.EOF)) {
+            this.handleError(this.buildErrorMessage('SUBROTINA'));
         }
-        // this.skip()
         else {
-            this.skip(this.buildErrorMessage('subrotina'));
+            this.skip(this.buildErrorMessage('SUBROTINA'));
             this.Rotina();
         }
     }
@@ -251,16 +258,15 @@ export class Parser {
      * ListaParam => Param ListaParam
      */
     public ListaParam(): void {
-        if (this._token.tag === Tag.ID) {
+        if (this.isTag(Tag.ID)) {
             this.Param();
             this.ListaParamLinha();
         }
-        else if (this._token.tag === Tag.SB_FP) {
-            this.handleError(this.buildErrorMessage('subrotina'));
-            return;
+        else if (this.isTag(Tag.SB_FP)) {
+            this.handleError(this.buildErrorMessage('SUBROTINA'));
         }
         else {
-            this.skip(this.buildErrorMessage('subrotina'));
+            this.skip(this.buildErrorMessage('SUBROTINA'));
             this.ListaParam();
         }
     }
@@ -269,39 +275,36 @@ export class Parser {
      * ListaParam => "," ListaParam | ε 
      */
     public ListaParamLinha(): void {
-        if (this._token.tag === Tag.SB_VIRG) {
+        if (this.isTag(Tag.SB_VIRG)) {
             this.eat(Tag.SB_VIRG);
             this.ListaParam();
-        } else if (this._token.tag === Tag.SB_FP) {
-            return;
+        } else if (this.isTag(Tag.SB_FP)) {
         } else {
 
             this.skip(this.buildErrorMessage(';'));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.ListaParamLinha();
 
         }
-
     }
 
     /**
      * Param => ListaID Tipo
      */
     public Param(): void {
-        if (this._token.tag === Tag.ID) {
+        if (this.isTag(Tag.ID)) {
             this.ListaID();
             this.Tipo();
-        } else if ([
+        } else if (this.isTag(
             Tag.SB_VIRG, Tag.SB_FP
-        ].indexOf(this._token.tag) > -1) {
-            this.handleError(this.buildErrorMessage('id'));
-            return;
+        )) {
+            this.handleError(this.buildErrorMessage('ID'));
         } else {
 
-            this.skip(this.buildErrorMessage('id'));
+            this.skip(this.buildErrorMessage('ID'));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.Param();
 
         }
@@ -311,44 +314,43 @@ export class Parser {
      * ListaID => ID ListaID
      */
     public ListaID(): void {
-
-        if (this._token.tag === Tag.ID) {
+        if (this.isTag(Tag.ID)) {
             this.eat(Tag.ID);
             this.ListaIDLinha();
         }
-        else if ([
+        else if (this.isTag(
             Tag.SB_PVIRG, Tag.LOGICO, Tag.NUMERICO, Tag.LITERAL,
             Tag.NULO
-        ].indexOf(this._token.tag) > -1) {
-            this.handleError(this.buildErrorMessage('id'));
-            return;
+        )) {
+            this.handleError(this.buildErrorMessage('ID'));
         } else {
-            this.skip(this.buildErrorMessage('id'));
-            if (this._token.tag !== Tag.EOF)
-                this.ListaID();
-        }
 
+            this.skip(this.buildErrorMessage('ID'));
+
+            if (!this.isTag(Tag.EOF))
+                this.ListaID();
+
+        }
     }
 
     /**
      * ListaID  => "," ListaID | ε
      */
     public ListaIDLinha(): void {
-        if (this._token.tag === Tag.SB_VIRG) {
+        if (this.isTag(Tag.SB_VIRG)) {
             this.eat(Tag.SB_VIRG);
             this.ListaID();
-        } else if ([
+        } else if (this.isTag(
             Tag.SB_PVIRG, Tag.LOGICO, Tag.NUMERICO, Tag.LITERAL,
             Tag.NULO
-        ].indexOf(this._token.tag) > -1) {
-            return;
+        )) {
         } else {
 
             this.skip(this.buildErrorMessage(
-                '",", ";", logico, numerico, literal, nulo'
+                '",", ";", LOGICO, NUMERICO, LITERAL, NULO'
             ));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.ListaIDLinha();
 
         }
@@ -358,23 +360,20 @@ export class Parser {
      * Retorno => "retorne" Expressao | ε
      */
     public Retorno(): void {
-        // 18
-        if (this._token.tag === Tag.RETORNE) {
+        if (this.isTag(Tag.RETORNE)) {
             this.eat(Tag.RETORNE);
             this.Expressao();
         }
-        // 19
-        else if (this._token.tag === Tag.FIM) {
-            return;
+        else if (this.isTag(Tag.FIM)) {
         } else {
-            this.skip(this.buildErrorMessage('retorne, fim'));
-            if (this._token.tag !== Tag.EOF)
+            this.skip(this.buildErrorMessage('RETORNE, FIM'));
+            if (!this.isTag(Tag.EOF))
                 this.Retorno();
         }
     }
 
     /**
-     * Tipo => "logico" | "numerico" | "literal" | "nulo"
+     * Tipo => "logico" | "NUMERICO" | "LITERAL" | "nulo"
      */
     public Tipo(): void {
         switch (this._token.tag) {
@@ -394,14 +393,14 @@ export class Parser {
             case Tag.SB_VIRG:
             case Tag.SB_FP:
                 this.handleError(this.buildErrorMessage(
-                    'logico, numerico, literal, nulo'
+                    'LOGICO, NUMERICO, LITERAL, NULO'
                 ));
                 break;
             default:
                 this.skip(this.buildErrorMessage(
-                    'logico, numerico, literal, nulo'
+                    'LOGICO, NUMERICO, LITERAL, NULO'
                 ));
-                if (this._token.tag !== Tag.EOF)
+                if (!this.isTag(Tag.EOF))
                     this.Tipo();
         }
     }
@@ -410,19 +409,19 @@ export class Parser {
      * ListaCmd => ListaCmd
      */
     public ListaCmd(): void {
-        if ([
+        if (this.isTag(
             Tag.FIM, Tag.ID, Tag.RETORNE, Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ATE,
             Tag.REPITA, Tag.ESCREVA, Tag.LEIA
-        ].indexOf(this._token.tag) > -1) {
+        )) {
             this.ListaCmdLinha();
         }
         else {
 
             this.skip(this.buildErrorMessage(
-                'se, enquanto, para, repita, id, escreva, leia, fim, retorne, ate'
+                'SE, ENQUANTO, PARA, REPITA, ID, ESCREVA, LEIA, FIM, RETORNE, ATE'
             ));
 
-            if (this._token.tag === Tag.EOF)
+            if (this.isTag(Tag.EOF))
                 this.ListaCmd();
 
         }
@@ -432,24 +431,21 @@ export class Parser {
      * ListaCmd => Cmd ListaCmd | ε
      */
     public ListaCmdLinha(): void {
-        if ([
+        if (this.isTag(
             Tag.ID, Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.REPITA,
             Tag.ESCREVA, Tag.LEIA
-        ].indexOf(this._token.tag) > -1) {
+        )) {
             this.Cmd();
             this.ListaCmdLinha();
         }
-        else if ([
-            Tag.FIM, Tag.RETORNE, Tag.ATE
-        ].indexOf(this._token.tag) > -1) {
-            return;
+        else if (this.isTag(Tag.FIM, Tag.RETORNE, Tag.ATE)) {
         } else {
 
             this.skip(this.buildErrorMessage(
-                'se, enquanto, para, repita, id, escreva, leia, fim, retorne, ate'
+                'SE, ENQUANTO, PARA, REPITA, ID, ESCREVA, LEIA, FIM, RETORNE, ATE'
             ));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.ListaCmdLinha();
 
         }
@@ -474,7 +470,7 @@ export class Parser {
                 break;
             case Tag.ID:
                 if (!this.eat(Tag.ID))
-                    this.handleError(this.buildErrorMessage('id'));
+                    this.handleError(this.buildErrorMessage('ID'));
                 this.CmdLinha();
                 break;
             case Tag.ESCREVA:
@@ -486,11 +482,17 @@ export class Parser {
             case Tag.FIM:
             case Tag.RETORNE:
             case Tag.ATE:
-                this.handleError(this.buildErrorMessage('se, enquanto, para, repita, id, escreva, leia'));
+                this.handleError(this.buildErrorMessage(
+                    'SE, ENQUANTO, PARA, REPITA, ID, ESCREVA, LEIA'
+                ));
                 break;
             default:
-                this.skip(this.buildErrorMessage('se, enquanto, para, repita, id, escreva, leia'));
-                if (this._token.tag !== Tag.EOF)
+
+                this.skip(this.buildErrorMessage(
+                    'SE, ENQUANTO, PARA, REPITA, ID, ESCREVA, LEIA'
+                ));
+
+                if (!this.isTag(Tag.EOF))
                     this.Cmd();
         }
     }
@@ -499,20 +501,20 @@ export class Parser {
      * Cmd => CmdAtrib | CmdChamaRotina
      */
     public CmdLinha(): void {
-        if (this._token.tag === Tag.OP_ARTIB)
+        if (this.isTag(Tag.OP_ARTIB))
             this.CmdAtrib();
-        else if (this._token.tag === Tag.SB_AP)
+        else if (this.isTag(Tag.SB_AP))
             this.CmdChamaRotina();
-        else if ([
-            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.REPITA, Tag.ID, Tag.ESCREVA, Tag.LEIA,
-            Tag.FIM, Tag.RETORNE, Tag.ATE
-        ].indexOf(this._token.tag) > -1) {
+        else if (this.isTag(
+            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.REPITA, Tag.ID,
+            Tag.ESCREVA, Tag.LEIA, Tag.FIM, Tag.RETORNE, Tag.ATE
+        )) {
             this.handleError(this.buildErrorMessage('<--, ('));
         } else {
 
             this.skip(this.buildErrorMessage('<--, ('));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.CmdLinha();
 
         }
@@ -523,7 +525,7 @@ export class Parser {
      */
     public CmdSe(): void {
 
-        if (this._token.tag === Tag.SE) {
+        if (this.isTag(Tag.SE)) {
 
             this.eat(Tag.SE);
 
@@ -536,59 +538,59 @@ export class Parser {
                 this.handleError(this.buildErrorMessage(')'));
 
             if (!this.eat(Tag.INICIO))
-                this.handleError(this.buildErrorMessage('inicio'));
+                this.handleError(this.buildErrorMessage('INICIO'));
 
             this.ListaCmd();
 
             if (!this.eat(Tag.FIM))
-                this.handleError(this.buildErrorMessage('fim'));
+                this.handleError(this.buildErrorMessage('FIM'));
 
             this.CmdSeLinha();
 
-        } else if ([
+        } else if (this.isTag(
             Tag.ENQUANTO, Tag.PARA, Tag.REPITA, Tag.ID, Tag.ESCREVA,
             Tag.LEIA, Tag.FIM, Tag.RETORNE, Tag.ATE
-        ].indexOf(this._token.tag) > -1) {
-            this.handleError(this.buildErrorMessage('se'));
+        )) {
+            this.handleError(this.buildErrorMessage('SE'));
         } else {
 
-            this.skip(this.buildErrorMessage('se'));
+            this.skip(this.buildErrorMessage('SE'));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.CmdSe();
 
         }
     }
 
     /**
-     * CmdSe => "senao" "inicio" ListaCmd "fim" | ε 
+     * CmdSe => "seNAO" "inicio" ListaCmd "fim" | ε 
      */
     public CmdSeLinha(): void {
-        if (this._token.tag === Tag.SENAO) {
+        if (this.isTag(Tag.SENAO)) {
 
             this.eat(Tag.SENAO);
 
             if (!this.eat(Tag.INICIO))
-                this.handleError(this.buildErrorMessage('fim'));
+                this.handleError(this.buildErrorMessage('FIM'));
 
             this.ListaCmd();
 
             if (!this.eat(Tag.FIM))
-                this.handleError(this.buildErrorMessage('fim'));
+                this.handleError(this.buildErrorMessage('FIM'));
 
         }
-        else if ([
+        else if (this.isTag(
             Tag.FIM, Tag.ID, Tag.RETORNE, Tag.SE, Tag.ENQUANTO, Tag.PARA,
             Tag.ATE, Tag.REPITA, Tag.ESCREVA, Tag.LEIA
-        ].indexOf(this._token.tag) > -1) {
+        )) {
             return;
         } else {
 
             this.skip(this.buildErrorMessage(
-                'senao , se, enquanto, para, repita, id, escreva, leia,fim, retorne, ate'
+                'SENAO, SE, ENQUANTO, PARA, REPITA, ID, ESCREVA, LEIA, FIM, RETORNE, ATE'
             ));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.CmdSeLinha();
 
         }
@@ -598,7 +600,7 @@ export class Parser {
      * CmdEnquanto => "enquanto" "(" Expressao ")" "faca" "inicio" ListaCmd "fim"
      */
     public CmdEnquanto(): void {
-        if (this._token.tag === Tag.ENQUANTO) {
+        if (this.isTag(Tag.ENQUANTO)) {
 
             this.eat(Tag.ENQUANTO);
 
@@ -612,27 +614,27 @@ export class Parser {
 
 
             if (!this.eat(Tag.FACA))
-                this.handleError(this.buildErrorMessage('faca'));
+                this.handleError(this.buildErrorMessage('FACA'));
 
 
             if (!this.eat(Tag.INICIO))
-                this.handleError(this.buildErrorMessage('inicio'));
+                this.handleError(this.buildErrorMessage('INICIO'));
 
             this.ListaCmd();
 
             if (!this.eat(Tag.FIM))
-                this.handleError(this.buildErrorMessage('fim'));
+                this.handleError(this.buildErrorMessage('FIM'));
 
-        } else if ([
+        } else if (this.isTag(
             Tag.SE, Tag.PARA, Tag.REPITA, Tag.ID, Tag.ESCREVA, Tag.LEIA,
             Tag.FIM, Tag.RETORNE, Tag.ATE
-        ].indexOf(this._token.tag) > -1) {
-            this.handleError(this.buildErrorMessage('enquanto'));
+        )) {
+            this.handleError(this.buildErrorMessage('ENQUANTO'));
         } else {
 
-            this.skip(this.buildErrorMessage('enquanto'));
+            this.skip(this.buildErrorMessage('ENQUANTO'));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.CmdEnquanto();
 
         }
@@ -643,41 +645,41 @@ export class Parser {
      *            ListaCmd "fim"
      */
     public CmdPara(): void {
-        if (this._token.tag === Tag.PARA) {
+        if (this.isTag(Tag.PARA)) {
 
             this.eat(Tag.PARA);
 
             if (!this.eat(Tag.ID))
-                this.handleError(this.buildErrorMessage('id'));
+                this.handleError(this.buildErrorMessage('ID'));
 
             this.CmdAtrib();
 
             if (!this.eat(Tag.ATE))
-                this.handleError(this.buildErrorMessage('ate'));
+                this.handleError(this.buildErrorMessage('ATE'));
 
             this.Expressao();
 
             if (!this.eat(Tag.FACA))
-                this.handleError(this.buildErrorMessage('faca'));
+                this.handleError(this.buildErrorMessage('FACA'));
 
             if (!this.eat(Tag.INICIO))
-                this.handleError(this.buildErrorMessage('inicio'));
+                this.handleError(this.buildErrorMessage('INICIO'));
 
             this.ListaCmd();
 
             if (!this.eat(Tag.FIM))
-                this.handleError(this.buildErrorMessage('fim'));
+                this.handleError(this.buildErrorMessage('FIM'));
 
-        } else if ([
-            Tag.SE, Tag.ENQUANTO, , Tag.REPITA, Tag.ID, Tag.ESCREVA, Tag.LEIA,
-            Tag.FIM, Tag.RETORNE, Tag.ATE
-        ].indexOf(this._token.tag) > -1) {
-            this.handleError(this.buildErrorMessage('para'));
+        } else if (this.isTag(
+            Tag.SE, Tag.ENQUANTO, Tag.REPITA, Tag.ID, Tag.ESCREVA,
+            Tag.LEIA, Tag.FIM, Tag.RETORNE, Tag.ATE
+        )) {
+            this.handleError(this.buildErrorMessage('PARA'));
         } else {
 
-            this.skip(this.buildErrorMessage('para'));
+            this.skip(this.buildErrorMessage('PARA'));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.CmdPara();
 
         }
@@ -687,25 +689,25 @@ export class Parser {
      * CmdRepita => "repita" ListaCmd "ate" Expressao
      */
     public CmdRepita(): void {
-        if (this._token.tag === Tag.REPITA) {
+        if (this.isTag(Tag.REPITA)) {
 
             this.eat(Tag.REPITA);
 
             this.ListaCmd();
 
             if (!this.eat(Tag.ATE))
-                this.handleError(this.buildErrorMessage('ate'));
+                this.handleError(this.buildErrorMessage('ATE'));
 
             this.Expressao();
 
-        } else if ([
-            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ID, Tag.ESCREVA, Tag.LEIA,
-            Tag.FIM, Tag.RETORNE, Tag.ATE
-        ].indexOf(this._token.tag) > -1) {
-            this.handleError(this.buildErrorMessage('repita'));
+        } else if (this.isTag(
+            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ID, Tag.ESCREVA,
+            Tag.LEIA, Tag.FIM, Tag.RETORNE, Tag.ATE
+        )) {
+            this.handleError(this.buildErrorMessage('REPITA'));
         } else {
-            this.skip(this.buildErrorMessage('repita'));
-            if (this._token.tag !== Tag.EOF)
+            this.skip(this.buildErrorMessage('REPITA'));
+            if (!this.isTag(Tag.EOF))
                 this.CmdRepita();
 
         }
@@ -715,7 +717,7 @@ export class Parser {
      * CmdAtrib => "<--" Expressao ";"
      */
     public CmdAtrib(): void {
-        if (this._token.tag === Tag.OP_ARTIB) {
+        if (this.isTag(Tag.OP_ARTIB)) {
 
             this.eat(Tag.OP_ARTIB);
 
@@ -724,16 +726,16 @@ export class Parser {
             if (!this.eat(Tag.SB_PVIRG))
                 this.handleError(this.buildErrorMessage(';'));
 
-        } else if ([
+        } else if (this.isTag(
             Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ID, Tag.ESCREVA,
             Tag.LEIA, Tag.FIM, Tag.RETORNE, Tag.ATE, Tag.REPITA
-        ].indexOf(this._token.tag) > -1) {
+        )) {
             this.handleError(this.buildErrorMessage('<-- '));
         } else {
 
             this.skip(this.buildErrorMessage('<-- '));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.CmdAtrib();
 
         }
@@ -743,7 +745,7 @@ export class Parser {
      * CmdChamaRotina => "(" RegexExp ")" ";"
      */
     public CmdChamaRotina(): void {
-        if (this._token.tag === Tag.SB_AP) {
+        if (this.isTag(Tag.SB_AP)) {
 
             this.eat(Tag.SB_AP);
             this.RegexExp();
@@ -754,16 +756,16 @@ export class Parser {
             if (!this.eat(Tag.SB_PVIRG))
                 this.handleError(this.buildErrorMessage(';'));
 
-        } else if ([
-            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ID, Tag.ESCREVA, Tag.LEIA,
-            Tag.FIM, Tag.RETORNE, Tag.ATE, Tag.REPITA
-        ].indexOf(this._token.tag) > -1) {
+        } else if (this.isTag(
+            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ID, Tag.ESCREVA,
+            Tag.LEIA, Tag.FIM, Tag.RETORNE, Tag.ATE, Tag.REPITA
+        )) {
             this.handleError(this.buildErrorMessage('( '));
         } else {
 
             this.skip(this.buildErrorMessage('( '));
 
-            if (this._token.tag !== Tag.EOF)
+            if (!this.isTag(Tag.EOF))
                 this.CmdChamaRotina();
 
         }
@@ -773,472 +775,457 @@ export class Parser {
      * RegexExp => Expressao RegexExp | ε
      */
     public RegexExp(): void {
-        if ([
+        if (this.isTag(
             Tag.ID, Tag.SB_AP, Tag.NAO, Tag.VERDADEIRO, Tag.FALSO,
             Tag.NUMERICO, Tag.LITERAL
-        ].indexOf(this._token.tag) > -1) {
+        )) {
             this.Expressao();
             this.RegexExpLinha();
         }
-        else if (this._token.tag === Tag.SB_FP)
-            return;
+        else if (this.isTag(Tag.SB_FP)) { }
         else {
 
             this.skip(this.buildErrorMessage(
-                'id, Numerico, Literal, verdadeiro, falso, Nao, ('
+                'ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ('
             ));
 
-            if (this._token.tag !== Tag.EOF)
-
+            if (!this.isTag(Tag.EOF))
                 this.RegexExp();
 
         }
     }
 
-    // RegexExp => , Expressao RegexExp 46 | ε 47
-    public void RegexExpLinha() {
-        if (this._token.tag === Tag.SB_VIRG) {
+    /**
+     * RegexExp => , Expressao RegexExp | ε
+     */
+    public RegexExpLinha(): void {
+        if (this.isTag(Tag.SB_VIRG)) {
+
             this.eat(Tag.SB_VIRG);
-            Expressao();
-            RegexExpLinha();
-        } else if (this._token.tag === Tag.SB_FP)
-            return;
+
+            this.Expressao();
+            this.RegexExpLinha();
+
+        } else if (this.isTag(Tag.SB_FP)) { }
         else {
-            this.skip(this.buildErrorMessage(',', this._token));
-            if (this._token.tag !== Tag.EOF)
-                RegexExpLinha();
+
+            this.skip(this.buildErrorMessage(','));
+
+            if (!this.isTag(Tag.EOF))
+                this.RegexExpLinha();
 
         }
     }
 
-    // CmdEscreva =>'escreva'"('Expressao')'";'48
-    public void CmdEscreva() {
-        if (this._token.tag === Tag.ESCREVA) {
+    /**
+     * CmdEscreva => "escreva" "(" Expressao ")" ";"
+     */
+    public CmdEscreva(): void {
+        if (this.isTag(Tag.ESCREVA)) {
+
             this.eat(Tag.ESCREVA);
-            if (!this.eat(Tag.SB_AP)) {
-                handleError('Esperado \'( \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
 
-            Expressao();
+            if (!this.eat(Tag.SB_AP))
+                this.handleError(this.buildErrorMessage('('));
 
-            if (!this.eat(Tag.SB_FP)) {
-                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            this.Expressao();
 
-            if (!this.eat(Tag.SB_PVIRG)) {
-                handleError('Esperado \'; \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.PARA || this._token.tag === Tag.ID || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.FIM || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA) {
-            handleError(this.buildErrorMessage('escreva ', this._token));
-        } else {
-            this.skip(this.buildErrorMessage('escreva ', this._token));
-            if (this._token.tag !== Tag.EOF)
-                CmdEscreva();
+            if (!this.eat(Tag.SB_FP))
+                this.handleError(this.buildErrorMessage(')'));
 
-        }
+            if (!this.eat(Tag.SB_PVIRG))
+                this.handleError(this.buildErrorMessage(';'));
 
-    } // fIM cmdeSCREVA
+        } else if (this.isTag(
+            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ID, Tag.LEIA,
+            Tag.FIM, Tag.RETORNE, Tag.ATE, Tag.REPITA
+        ))
+            this.handleError(this.buildErrorMessage('ESCREVA'));
+        else {
 
-    // CmdLeia =>'leia'"('id')'";'49
-    public void CmdLeia() {
-        if (this._token.tag === Tag.LEIA) {
-            this.eat(Tag.LEIA);
-            if (!this.eat(Tag.SB_AP)) {
-                handleError('Esperado \'( \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
+            this.skip(this.buildErrorMessage('ESCREVA'));
 
-            if (!this.eat(Tag.ID)) {
-                handleError('Esperado \'ID \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-
-            if (!this.eat(Tag.SB_FP)) {
-                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-
-            if (!this.eat(Tag.SB_PVIRG)) {
-                handleError('Esperado \'; \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-        } else if (this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.PARA || this._token.tag === Tag.ID
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.FIM
-            || this._token.tag === Tag.RETORNE || this._token.tag === Tag.ATE
-            || this._token.tag === Tag.REPITA) {
-            handleError(this.buildErrorMessage('leia ', this._token));
-        } else {
-            this.skip(this.buildErrorMessage('leia ', this._token));
-            if (this._token.tag !== Tag.EOF)
-                CmdLeia();
+            if (!this.isTag(Tag.EOF))
+                this.CmdEscreva();
 
         }
-
     }
 
-    // Expressao => Exp1 Exp 50
-    public void Expressao() {
-        if (this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.nao
-            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
-            || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL) {
+    /**
+     * CmdLeia => "leia" "(" ID ")" ";"
+     */
+    public CmdLeia(): void {
+        if (this.isTag(Tag.LEIA)) {
 
-            Exp1();
-            ExpLinha();
-        } else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_FP || this._token.tag === Tag.SE
-            || this._token.tag === Tag.ENQUANTO || this._token.tag === Tag.PARA
-            || this._token.tag === Tag.REPITA || this._token.tag === Tag.ESCREVA
-            || this._token.tag === Tag.LEIA || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.SB_PVIRG
-            || this._token.tag === Tag.SB_VIRG) {
-            handleError(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
-            return;
-        } else {
-            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
-            if (this._token.tag !== Tag.EOF)
-                Expressao();
+            this.eat(Tag.LEIA);
+
+            if (!this.eat(Tag.SB_AP))
+                this.handleError(this.buildErrorMessage('('));
+
+            if (!this.eat(Tag.ID))
+                this.handleError(this.buildErrorMessage('ID'));
+
+            if (!this.eat(Tag.SB_FP))
+                this.handleError(this.buildErrorMessage(')'));
+
+            if (!this.eat(Tag.SB_PVIRG))
+                this.handleError(this.buildErrorMessage(';'));
+
+        } else if (this.isTag(
+            Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.ID, Tag.ESCREVA,
+            Tag.FIM, Tag.RETORNE, Tag.ATE, Tag.REPITA
+        ))
+            this.handleError(this.buildErrorMessage('LEIA'));
+        else {
+
+            this.skip(this.buildErrorMessage('LEIA'));
+
+            if (!this.isTag(Tag.EOF))
+                this.CmdLeia();
         }
-    }// fim Expressao
+    }
+
+    /**
+     * Expressao => Exp1 Exp
+     */
+    public Expressao(): void {
+        if (this.isTag(
+            Tag.ID, Tag.SB_AP, Tag.NAO, Tag.VERDADEIRO, Tag.FALSO,
+            Tag.NUMERICO, Tag.LITERAL
+        )) {
+            this.Exp1();
+            this.ExpLinha();
+        } else if (this.isTag(
+            Tag.FIM, Tag.SB_FP, Tag.SE, Tag.ENQUANTO, Tag.PARA,
+            Tag.REPITA, Tag.ESCREVA, Tag.LEIA, Tag.RETORNE, Tag.ATE,
+            Tag.SB_PVIRG, Tag.SB_VIRG
+        )) {
+            this.handleError(this.buildErrorMessage(
+                'ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ('
+            ));
+        } else {
+
+            this.skip(this.buildErrorMessage(
+                'ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ('
+            ));
+
+            if (!this.isTag(Tag.EOF))
+                this.Expressao();
+
+        }
+    }
 
 	/*
-	 * Exp => < Exp1 Exp 51 | <= Exp1 Exp 52 | > Exp1 Exp 53 | >= Exp1 Exp 54 |
-	 * = Exp1 Exp 55 | <> Exp1 Exp 56 | ε 57
+     * Exp => < Exp1 Exp | <= Exp1 Exp | > Exp1 Exp | >= Exp1 Exp | 
+     *        = Exp1 Exp | <> Exp1 Exp | ε
 	 */
-    public void ExpLinha() {
-        // 51
-        if (this._token.tag === Tag.RELOP_LT) {
-            this.eat(Tag.RELOP_LT);
-            Exp1();
-            ExpLinha();
-        }
-        // 52
-        else if (this._token.tag === Tag.RELOP_LE) {
-            this.eat(Tag.RELOP_LE);
-            Exp1();
-            ExpLinha();
-        }
-        // 53
-        else if (this._token.tag === Tag.RELOP_GT) {
-            this.eat(Tag.RELOP_GT);
-            Exp1();
-            ExpLinha();
-        } // 54
-        else if (this._token.tag === Tag.RELOP_GE) {
-            this.eat(Tag.RELOP_GE);
-            Exp1();
-            ExpLinha();
-        } // 55
-        else if (this._token.tag === Tag.RELOP_EQ) {
-            this.eat(Tag.RELOP_EQ);
-            Exp1();
-            ExpLinha();
-        } // 56
-        else if (this._token.tag === Tag.RELOP_LT_GT) {
-            this.eat(Tag.RELOP_LT_GT);
-            Exp1();
-            ExpLinha();
-        } // 57
-        else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_PVIRG
-            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.SB_FP
-            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA) {
-            return;
+    public ExpLinha(): void {
+        if (this.isTag(Tag.OP_LT)) {
+            this.eat(Tag.OP_LT);
+            this.Exp1();
+            this.ExpLinha();
+        } else if (this.isTag(Tag.OP_LE)) {
+            this.eat(Tag.OP_LE);
+            this.Exp1();
+            this.ExpLinha();
+        } else if (this.isTag(Tag.OP_GT)) {
+            this.eat(Tag.OP_GT);
+            this.Exp1();
+            this.ExpLinha();
+        } else if (this.isTag(Tag.OP_GE)) {
+            this.eat(Tag.OP_GE);
+            this.Exp1();
+            this.ExpLinha();
+        } else if (this.isTag(Tag.OP_EQ)) {
+            this.eat(Tag.OP_EQ);
+            this.Exp1();
+            this.ExpLinha();
+        } else if (this.isTag(Tag.OP_LT_GT)) {
+            this.eat(Tag.OP_LT_GT);
+            this.Exp1();
+            this.ExpLinha();
+        } else if (this.isTag(
+            Tag.FIM, Tag.SB_PVIRG, Tag.ID, Tag.SB_AP, Tag.SB_FP,
+            Tag.SB_VIRG, Tag.RETORNE, Tag.SE, Tag.ENQUANTO, Tag.FACA,
+            Tag.PARA, Tag.ATE, Tag.REPITA, Tag.ESCREVA, Tag.LEIA
+        )) {
         } else {
-            this.skip(this.buildErrorMessage('<, <=, >, >=, =, <>', this._token));
-            if (this._token.tag !== Tag.EOF)
-                ExpLinha();
-        }
 
-    }
+            this.skip(this.buildErrorMessage('<, <=, >, >=, =, <>'));
 
-    // Exp1 => Exp2 Exp1 58
-    public void Exp1() {
-        if (this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.nao
-            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
-            || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL) {
-            Exp2();
-            Exp1Linha();
-        } else if (this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
-            || this._token.tag === Tag.RELOP_GT || this._token.tag === Tag.RELOP_GE
-            || this._token.tag === Tag.RELOP_LT_GT || this._token.tag === Tag.FIM
-            || this._token.tag === Tag.SB_FP || this._token.tag === Tag.SE
-            || this._token.tag === Tag.ENQUANTO || this._token.tag === Tag.PARA
-            || this._token.tag === Tag.REPITA || this._token.tag === Tag.ESCREVA
-            || this._token.tag === Tag.LEIA || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.SB_PVIRG
-            || this._token.tag === Tag.SB_VIRG) {
-            handleError(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
-            return;
-        } else {
-            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, (  ', this._token));
-            if (this._token.tag !== Tag.EOF)
-                Exp1();
+            if (!this.isTag(Tag.EOF))
+                this.ExpLinha();
+
         }
     }
 
-    // Exp1 => E Exp2 Exp1 59 | Ou Exp2 Exp1 60| ε 61
-    public void Exp1Linha() {
-        // 59
-        if (this._token.tag === Tag.e) {
-            this.eat(Tag.e);
-            Exp2();
-            Exp1Linha();
+    /**
+     *  Exp1 => Exp2 Exp1
+     */
+    public Exp1(): void {
+        if (this.isTag(
+            Tag.ID, Tag.SB_AP, Tag.NAO, Tag.VERDADEIRO, Tag.FALSO,
+            Tag.NUMERICO, Tag.LITERAL
+        )) {
+            this.Exp2();
+            this.Exp1Linha();
+        } else if (this.isTag(
+            Tag.OP_LT, Tag.OP_LE, Tag.OP_GT, Tag.OP_GE, Tag.OP_LT_GT, Tag.FIM,
+            Tag.SB_FP, Tag.SE, Tag.ENQUANTO, Tag.PARA, Tag.REPITA, Tag.ESCREVA,
+            Tag.LEIA, Tag.RETORNE, Tag.ATE, Tag.SB_PVIRG, Tag.SB_VIRG
+        ))
+            this.handleError(this.buildErrorMessage(
+                'ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ('
+            ));
+        else {
+
+            this.skip(this.buildErrorMessage(
+                'ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ('
+            ));
+
+            if (!this.isTag(Tag.EOF))
+                this.Exp1();
+
         }
-        // 60
-        else if (this._token.tag === Tag.ou) {
-            this.eat(Tag.ou);
-            Exp2();
-            Exp1Linha();
-        }
-        // 61
-        else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_PVIRG
-            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
-            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
-            || this._token.tag === Tag.RELOP_GT || this._token.tag === Tag.RELOP_GE
-            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_LT_GT) {
-            return;
-        } else {
-            this.skip(this.buildErrorMessage('E, Ou', this._token));
-            if (this._token.tag !== Tag.EOF)
-                Exp1Linha();
-        }
-
-    }// fim Exp1Linha
-
-    // Exp2 => Exp3 Exp2 62
-    public void Exp2() {
-        if (this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.nao
-            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
-            || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL) {
-
-            Exp3();
-            Exp2Linha();
-        } else if (this._token.tag === Tag.e || this._token.tag === Tag.ou || this._token.tag === Tag.FIM
-            || this._token.tag === Tag.SB_PVIRG || this._token.tag === Tag.ID
-            || this._token.tag === Tag.SB_FP || this._token.tag === Tag.SB_VIRG
-            || this._token.tag === Tag.RETORNE || this._token.tag === Tag.SE
-            || this._token.tag === Tag.ENQUANTO || this._token.tag === Tag.FACA
-            || this._token.tag === Tag.PARA || this._token.tag === Tag.ATE
-            || this._token.tag === Tag.REPITA || this._token.tag === Tag.ESCREVA
-            || this._token.tag === Tag.LEIA || this._token.tag === Tag.RELOP_LT
-            || this._token.tag === Tag.RELOP_LE || this._token.tag === Tag.RELOP_GT
-            || this._token.tag === Tag.RELOP_GE || this._token.tag === Tag.RELOP_EQ
-            || this._token.tag === Tag.RELOP_LT_GT) {
-
-            handleError(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, (', this._token));
-            return;
-        } else {
-            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
-            if (this._token.tag !== Tag.EOF)
-                Exp2();
-        }
-
-    }// Exp2
-
-    // Exp2 => + Exp3 Exp2 63 | - Exp3 Exp2 64 | ε 65
-    public void Exp2Linha() {
-
-        if (this._token.tag === Tag.RELOP_PLUS) {
-            this.eat(Tag.RELOP_PLUS);
-            Exp3();
-            Exp2Linha();
-        } else if (this._token.tag === Tag.RELOP_MINUS) {
-            this.eat(Tag.RELOP_MINUS);
-            Exp3();
-            Exp2Linha();
-        } else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_PVIRG
-            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
-            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
-            || this._token.tag === Tag.RELOP_GT || this._token.tag === Tag.RELOP_GE
-            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_LT_GT
-            || this._token.tag === Tag.e || this._token.tag === Tag.ou) {
-            return;
-        } else {
-            this.skip(this.buildErrorMessage('+, -', this._token));
-            if (this._token.tag !== Tag.EOF)
-                Exp2Linha();
-        }
-
-    }// fim Exp2Linha
-
-    // Exp3 => Exp4 Exp3 66
-    public void Exp3() {
-        if (this._token.tag === Tag.ID || this._token.tag === Tag.SB_AP || this._token.tag === Tag.nao
-            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
-            || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL) {
-            Exp4();
-            Exp3Linha();
-        } else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_PVIRG
-            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
-            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
-            || this._token.tag === Tag.RELOP_GT || this._token.tag === Tag.RELOP_GE
-            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_LT_GT
-            || this._token.tag === Tag.e || this._token.tag === Tag.ou) {
-            handleError(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, (', this._token));
-            return;
-        } else {
-            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
-            if (this._token.tag !== Tag.EOF)
-                Exp3();
-        }
-    }// fim Exp3
-
-    // Exp3 =>* Exp4 Exp3 67 | / Exp4 Exp3 68 | ε 69
-    public void Exp3Linha() {
-        // 67
-        if (this._token.tag === Tag.RELOP_MULT) {
-            this.eat(Tag.RELOP_MULT);
-            Exp4();
-            Exp3Linha();
-        } else if (this._token.tag === Tag.RELOP_DIV) {
-            this.eat(Tag.RELOP_DIV);
-            Exp4();
-            Exp3Linha();
-        } else if (this._token.tag === Tag.FIM || this._token.tag === Tag.SB_PVIRG
-            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
-            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.RELOP_LT || this._token.tag === Tag.RELOP_LE
-            || this._token.tag === Tag.RELOP_GT || this._token.tag === Tag.RELOP_GE
-            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_LT_GT
-            || this._token.tag === Tag.e || this._token.tag === Tag.ou
-            || this._token.tag === Tag.RELOP_PLUS || this._token.tag === Tag.RELOP_MINUS) {
-            return;
-        } else {
-            this.skip(this.buildErrorMessage('* , /', this._token));
-            if (this._token.tag !== Tag.EOF)
-                Exp3Linha();
-        }
-
     }
 
-    // Exp4 => id Exp4 70 | Numerico 71 | Litetal 72 | “verdadeiro” 73 | “falso” 74|
-    // OpUnario Expressao 75| “(“ Expressao “)” 76
-    public void Exp4() {
-        // 70
-        if (this._token.tag === Tag.ID) {
+    /**
+     * Exp1 => E Exp2 Exp1 | Ou Exp2 Exp1 | ε 
+     */
+    public Exp1Linha(): void {
+        if (this.isTag(Tag.E)) {
+            this.eat(Tag.E);
+            this.Exp2();
+            this.Exp1Linha();
+        }
+        else if (this.isTag(Tag.OU)) {
+            this.eat(Tag.OU);
+            this.Exp2();
+            this.Exp1Linha();
+        }
+        else if (this.isTag(
+            Tag.FIM, Tag.SB_PVIRG, Tag.ID, Tag.SB_FP, Tag.SB_VIRG,
+            Tag.RETORNE, Tag.SE, Tag.ENQUANTO, Tag.FACA, Tag.PARA,
+            Tag.ATE, Tag.REPITA, Tag.ESCREVA, Tag.LEIA, Tag.OP_LT,
+            Tag.OP_LE, Tag.OP_GT, Tag.OP_GE, Tag.OP_EQ, Tag.OP_LT_GT
+        )) {
+            return
+        } else {
+
+            this.skip(this.buildErrorMessage('E, Ou'));
+
+            if (!this.isTag(Tag.EOF))
+                this.Exp1Linha();
+
+        }
+    }
+
+    /**
+     * Exp2 => Exp3 Exp2
+     */
+    public Exp2(): void {
+        if (this.isTag(
+            Tag.ID, Tag.SB_AP, Tag.NAO, Tag.VERDADEIRO, Tag.FALSO,
+            Tag.NUMERICO, Tag.LITERAL
+        )) {
+            this.Exp3();
+            this.Exp2Linha();
+        } else if (this.isTag(
+            Tag.E, Tag.OU, Tag.FIM, Tag.SB_PVIRG, Tag.ID, Tag.SB_FP,
+            Tag.SB_VIRG, Tag.RETORNE, Tag.SE, Tag.ENQUANTO, Tag.FACA, Tag.PARA,
+            Tag.ATE, Tag.REPITA, Tag.ESCREVA, Tag.LEIA, Tag.OP_LT, Tag.OP_LE,
+            Tag.OP_GT, Tag.OP_GE, Tag.OP_EQ, Tag.OP_LT_GT
+        )) {
+            this.handleError(this.buildErrorMessage(
+                'ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ('
+            ));
+        } else {
+
+            this.skip(this.buildErrorMessage(
+                'ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ('
+            ));
+
+            if (!this.isTag(Tag.EOF))
+                this.Exp2();
+
+        }
+    }
+
+    /**
+     * Exp2 => + Exp3 Exp2 | - Exp3 Exp2 | ε 
+     */
+    public Exp2Linha(): void {
+        if (this.isTag(Tag.OP_PLUS)) {
+            this.eat(Tag.OP_PLUS);
+            this.Exp3();
+            this.Exp2Linha();
+        } else if (this.isTag(Tag.OP_MINUS)) {
+            this.eat(Tag.OP_MINUS);
+            this.Exp3();
+            this.Exp2Linha();
+        } else if (this.isTag(
+            Tag.FIM, Tag.SB_PVIRG, Tag.ID, Tag.SB_FP, Tag.SB_VIRG, Tag.RETORNE,
+            Tag.SE, Tag.ENQUANTO, Tag.FACA, Tag.PARA, Tag.ATE, Tag.REPITA,
+            Tag.ESCREVA, Tag.LEIA, Tag.OP_LT, Tag.OP_LE, Tag.OP_GT, Tag.OP_GE,
+            Tag.OP_EQ, Tag.OP_LT_GT, Tag.E, Tag.OU
+        )) {
+        } else {
+
+            this.skip(this.buildErrorMessage('+, -'));
+
+            if (!this.isTag(Tag.EOF))
+                this.Exp2Linha();
+
+        }
+    }
+
+    /**
+     * Exp3 => Exp4 Exp3 
+     */
+    public Exp3(): void {
+        if (this.isTag(
+            Tag.ID, Tag.SB_AP, Tag.NAO, Tag.VERDADEIRO, Tag.FALSO,
+            Tag.NUMERICO, Tag.LITERAL
+        )) {
+            this.Exp4();
+            this.Exp3Linha();
+        } else if (this.isTag(
+            Tag.FIM, Tag.SB_PVIRG, Tag.ID, Tag.SB_FP, Tag.SB_VIRG, Tag.RETORNE,
+            Tag.SE, Tag.ENQUANTO, Tag.FACA, Tag.PARA, Tag.ATE, Tag.REPITA,
+            Tag.ESCREVA, Tag.LEIA, Tag.OP_LT, Tag.OP_LE, Tag.OP_GT, Tag.OP_GE,
+            Tag.OP_EQ, Tag.OP_LT_GT, Tag.E, Tag.OU
+        )) {
+            this.handleError(this.buildErrorMessage(
+                'ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ('
+            ));
+        } else {
+
+            this.skip(this.buildErrorMessage(
+                'ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ( '
+            ));
+
+            if (!this.isTag(Tag.EOF))
+                this.Exp3();
+
+        }
+    }
+
+    /**
+     * Exp3 => * Exp4 Exp3 | / Exp4 Exp3 | ε 
+     */
+    public Exp3Linha(): void {
+        if (this.isTag(Tag.OP_MULT)) {
+            this.eat(Tag.OP_MULT);
+            this.Exp4();
+            this.Exp3Linha();
+        } else if (this.isTag(Tag.OP_DIV)) {
+            this.eat(Tag.OP_DIV);
+            this.Exp4();
+            this.Exp3Linha();
+        } else if (this.isTag(
+            Tag.FIM, Tag.SB_PVIRG, Tag.ID, Tag.SB_FP, Tag.SB_VIRG,
+            Tag.RETORNE, Tag.SE, Tag.ENQUANTO, Tag.FACA, Tag.PARA,
+            Tag.ATE, Tag.REPITA, Tag.ESCREVA, Tag.LEIA, Tag.OP_LT,
+            Tag.OP_LE, Tag.OP_GT, Tag.OP_GE, Tag.OP_EQ, Tag.OP_LT_GT,
+            Tag.E, Tag.OU, Tag.OP_PLUS, Tag.OP_MINUS)) {
+        } else {
+
+            this.skip(this.buildErrorMessage('*, /'));
+
+            if (!this.isTag(Tag.EOF))
+                this.Exp3Linha();
+
+        }
+    }
+
+    /*
+     * Exp4 => ID Exp4 | NUMERICO | Litetal | "VERDADEIRO" | "FALSO" |
+     *         OpUnario Expressao | "("" Expressao ")" 
+     */
+    public Exp4(): void {
+        if (this.isTag(Tag.ID)) {
             this.eat(Tag.ID);
-            Exp4Linha();
-        } // 71
-        else if (this._token.tag === Tag.NUMERICO) {
-            this.eat(Tag.NUMERICO);
-        } // 72
-        else if (this._token.tag === Tag.LITERAL) {
-            this.eat(Tag.LITERAL);
-        } // 73
-        else if (this._token.tag === Tag.verdadeiro) {
-            this.eat(Tag.verdadeiro);
-        } // 74
-        else if (this._token.tag === Tag.falso) {
-            this.eat(Tag.falso);
+            this.Exp4Linha();
+        } else if (this.isTag(Tag.NUMERICO, Tag.LITERAL, Tag.VERDADEIRO, Tag.FALSO))
+            this.eat(this._token.tag);
+        else if (this.isTag(Tag.NAO)) {
+            this.OpUnario();
+            this.Expressao();
+        } else if (this.isTag(Tag.SB_AP)) {
 
-        } // 75
-        else if (this._token.tag === Tag.nao) {
-            OpUnario();
-            Expressao();
-        } // 76
-        else if (this._token.tag === Tag.SB_AP) {
-            if (!this.eat(Tag.SB_AP)) {
-                handleError('Esperado \'( \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-            Expressao();
-            if (!this.eat(Tag.SB_FP)) {
-                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-        } else if (this._token.tag === Tag.declare || this._token.tag === Tag.SB_PVIRG
-            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
-            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.e || this._token.tag === Tag.ou || this._token.tag === Tag.RELOP_LT
-            || this._token.tag === Tag.RELOP_LE || this._token.tag === Tag.RELOP_GT
-            || this._token.tag === Tag.RELOP_GE || this._token.tag === Tag.RELOP_LT_GT
-            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_PLUS
-            || this._token.tag === Tag.RELOP_MINUS || this._token.tag === Tag.RELOP_DIV
-            || this._token.tag === Tag.RELOP_MULT) {
-            handleError(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
-            return;
-        } else {
-            this.skip(this.buildErrorMessage('id, Numerico, Literal, verdadeiro, falso, Nao, ( ', this._token));
-            if (this._token.tag !== Tag.EOF)
-                Exp4();
-        }
+            if (!this.eat(Tag.SB_AP))
+                this.handleError(this.buildErrorMessage('('));
 
-    }
+            this.Expressao();
 
-    // Exp4 => “(“ RegexExp ”)” 77 | ε 78
-    public void Exp4Linha() {
-        // 77
-        if (this._token.tag === Tag.SB_AP) {
-            if (!this.eat(Tag.SB_AP)) {
-                handleError('Esperado \'( \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-            RegexExp();
-            if (!this.eat(Tag.SB_FP)) {
-                handleError('Esperado \') \', encontrado ' + '\"' + this._token.getLexema() + '\"");
-            }
-        }
-        // 78
-        else if (this._token.tag === Tag.declare || this._token.tag === Tag.SB_PVIRG
-            || this._token.tag === Tag.ID || this._token.tag === Tag.SB_FP
-            || this._token.tag === Tag.SB_VIRG || this._token.tag === Tag.RETORNE
-            || this._token.tag === Tag.SE || this._token.tag === Tag.ENQUANTO
-            || this._token.tag === Tag.FACA || this._token.tag === Tag.PARA
-            || this._token.tag === Tag.ATE || this._token.tag === Tag.REPITA
-            || this._token.tag === Tag.ESCREVA || this._token.tag === Tag.LEIA
-            || this._token.tag === Tag.e || this._token.tag === Tag.ou || this._token.tag === Tag.RELOP_LT
-            || this._token.tag === Tag.RELOP_LE || this._token.tag === Tag.RELOP_GT
-            || this._token.tag === Tag.RELOP_GE || this._token.tag === Tag.RELOP_LT_GT
-            || this._token.tag === Tag.RELOP_EQ || this._token.tag === Tag.RELOP_PLUS
-            || this._token.tag === Tag.RELOP_MINUS || this._token.tag === Tag.RELOP_DIV
-            || this._token.tag === Tag.RELOP_MULT) {
-            return;
-        } else {
-            this.skip(this.buildErrorMessage('( ', this._token));
-            if (this._token.tag !== Tag.EOF)
-                Exp4Linha();
-        }
+            if (!this.eat(Tag.SB_FP))
+                this.handleError(this.buildErrorMessage(')'));
 
-    }
+        } else if (this.isTag(
+            Tag.DECLARE, Tag.SB_PVIRG, Tag.ID, Tag.SB_FP, Tag.SB_VIRG, Tag.RETORNE,
+            Tag.SE, Tag.ENQUANTO, Tag.FACA, Tag.PARA, Tag.ATE, Tag.REPITA, Tag.ESCREVA,
+            Tag.LEIA, Tag.E, Tag.OU, Tag.OP_LT, Tag.OP_LE, Tag.OP_GT, Tag.OP_GE,
+            Tag.OP_LT_GT, Tag.OP_EQ, Tag.OP_PLUS, Tag.OP_MINUS, Tag.OP_DIV, Tag.OP_MULT
+        ))
+            this.handleError(this.buildErrorMessage('ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ('));
+        else {
 
-    // OpUnario =>'Nao'79
-    public void OpUnario() {
-        if (this._token.tag === Tag.nao) {
-            this.eat(Tag.nao);
-        } else if (this._token.tag === Tag.ID || this._token.tag === Tag.NUMERICO || this._token.tag === Tag.LITERAL
-            || this._token.tag === Tag.verdadeiro || this._token.tag === Tag.falso
-            || this._token.tag === Tag.SB_AP) {
+            this.skip(this.buildErrorMessage('ID, NUMERICO, LITERAL, VERDADEIRO, FALSO, NAO, ('));
 
-            handleError(this.buildErrorMessage('nao', this._token));
-            return;
-        } else {
-            this.skip(this.buildErrorMessage('nao ', this._token));
-            if (this._token.tag !== Tag.EOF)
-                OpUnario();
+            if (!this.isTag(Tag.EOF))
+                this.Exp4();
+
         }
     }
 
+    /**
+     * Exp4 => "(" RegexExp ")" | ε 
+     */
+    public Exp4Linha(): void {
+        if (this.isTag(Tag.SB_AP)) {
+
+            if (!this.eat(Tag.SB_AP))
+                this.handleError(this.buildErrorMessage('('));
+
+            this.RegexExp();
+
+            if (!this.eat(Tag.SB_FP))
+                this.handleError(this.buildErrorMessage(')'));
+
+        } else if (this.isTag(
+            Tag.DECLARE, Tag.SB_PVIRG, Tag.ID, Tag.SB_FP, Tag.SB_VIRG, Tag.RETORNE,
+            Tag.SE, Tag.ENQUANTO, Tag.FACA, Tag.PARA, Tag.ATE, Tag.REPITA, Tag.ESCREVA,
+            Tag.LEIA, Tag.E, Tag.OU, Tag.OP_LT, Tag.OP_LE, Tag.OP_GT, Tag.OP_GE,
+            Tag.OP_LT_GT, Tag.OP_EQ, Tag.OP_PLUS, Tag.OP_MINUS, Tag.OP_DIV, Tag.OP_MULT
+        )) {
+        } else {
+
+            this.skip(this.buildErrorMessage('('));
+
+            if (!this.isTag(Tag.EOF))
+                this.Exp4Linha();
+
+        }
+    }
+
+    /**
+     * OpUnario => "NAO"
+     */
+    public OpUnario(): void {
+        if (this.isTag(Tag.NAO))
+            this.eat(Tag.NAO);
+        else if (this.isTag(
+            Tag.ID, Tag.NUMERICO, Tag.LITERAL, Tag.VERDADEIRO, Tag.FALSO, Tag.SB_AP
+        ))
+            this.handleError(this.buildErrorMessage('NAO'));
+        else {
+
+            this.skip(this.buildErrorMessage('NAO'));
+
+            if (!this.isTag(Tag.EOF))
+                this.OpUnario();
+
+        }
+    }
 
 }

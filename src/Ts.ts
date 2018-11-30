@@ -6,30 +6,30 @@ export class Ts {
     private _ts: { [key: string]: Token } = {}
 
     constructor() {
-        this._ts[Tag.KW_ALGORITMO] = new Token(Tag.KW_ALGORITMO, 'ALGORITMO');
-        this._ts[Tag.KW_DECLARE] = new Token(Tag.KW_DECLARE, 'DECLARE');
-        this._ts[Tag.KW_INICIO] = new Token(Tag.KW_INICIO, 'INICIO');
-        this._ts[Tag.KW_FIM] = new Token(Tag.KW_FIM, 'FIM');
-        this._ts[Tag.KW_SUBROTINA] = new Token(Tag.KW_SUBROTINA, 'SUBROTINA');
-        this._ts[Tag.KW_RETORNE] = new Token(Tag.KW_RETORNE, 'RETORNE');
+        this._ts[Tag.ALGORITMO] = new Token(Tag.ALGORITMO, 'ALGORITMO');
+        this._ts[Tag.DECLARE] = new Token(Tag.DECLARE, 'DECLARE');
+        this._ts[Tag.INICIO] = new Token(Tag.INICIO, 'INICIO');
+        this._ts[Tag.FIM] = new Token(Tag.FIM, 'FIM');
+        this._ts[Tag.SUBROTINA] = new Token(Tag.SUBROTINA, 'SUBROTINA');
+        this._ts[Tag.RETORNE] = new Token(Tag.RETORNE, 'RETORNE');
         this._ts[Tag.LOGICO] = new Token(Tag.LOGICO, 'LOGICO');
         this._ts[Tag.NUMERICO] = new Token(Tag.NUMERICO, 'NUMERICO');
         this._ts[Tag.LITERAL] = new Token(Tag.LITERAL, 'LITERAL');
         this._ts[Tag.NULO] = new Token(Tag.NULO, 'NULO');
-        this._ts[Tag.KW_SE] = new Token(Tag.KW_SE, 'SE');
-        this._ts[Tag.KW_SENAO] = new Token(Tag.KW_SENAO, 'SENAO');
-        this._ts[Tag.KW_ENQUANTO] = new Token(Tag.KW_ENQUANTO, 'ENQUANTO');
-        this._ts[Tag.KW_PARA] = new Token(Tag.KW_PARA, 'PARA');
-        this._ts[Tag.KW_ATE] = new Token(Tag.KW_ATE, 'ATE');
-        this._ts[Tag.KW_FACA] = new Token(Tag.KW_FACA, 'FACA');
-        this._ts[Tag.KW_REPITA] = new Token(Tag.KW_REPITA, 'REPITA');
-        this._ts[Tag.KW_ESCREVA] = new Token(Tag.KW_ESCREVA, 'ESCREVA');
-        this._ts[Tag.KW_LEIA] = new Token(Tag.KW_LEIA, 'LEIA');
-        this._ts[Tag.KW_VERDADEIRO] = new Token(Tag.KW_VERDADEIRO, 'VERDADEIRO');
-        this._ts[Tag.KW_FALSO] = new Token(Tag.KW_FALSO, 'FALSO');
-        this._ts[Tag.KW_OU] = new Token(Tag.KW_OU, 'OU');
-        this._ts[Tag.KW_E] = new Token(Tag.KW_E, 'E');
-        this._ts[Tag.KW_NAO] = new Token(Tag.KW_NAO, 'NAO');
+        this._ts[Tag.SE] = new Token(Tag.SE, 'SE');
+        this._ts[Tag.SENAO] = new Token(Tag.SENAO, 'SENAO');
+        this._ts[Tag.ENQUANTO] = new Token(Tag.ENQUANTO, 'ENQUANTO');
+        this._ts[Tag.PARA] = new Token(Tag.PARA, 'PARA');
+        this._ts[Tag.ATE] = new Token(Tag.ATE, 'ATE');
+        this._ts[Tag.FACA] = new Token(Tag.FACA, 'FACA');
+        this._ts[Tag.REPITA] = new Token(Tag.REPITA, 'REPITA');
+        this._ts[Tag.ESCREVA] = new Token(Tag.ESCREVA, 'ESCREVA');
+        this._ts[Tag.LEIA] = new Token(Tag.LEIA, 'LEIA');
+        this._ts[Tag.VERDADEIRO] = new Token(Tag.VERDADEIRO, 'VERDADEIRO');
+        this._ts[Tag.FALSO] = new Token(Tag.FALSO, 'FALSO');
+        this._ts[Tag.OU] = new Token(Tag.OU, 'OU');
+        this._ts[Tag.E] = new Token(Tag.E, 'E');
+        this._ts[Tag.NAO] = new Token(Tag.NAO, 'NAO');
     }
 
     public put(tag: Tag, token: Token): void {

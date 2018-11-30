@@ -87,6 +87,20 @@ export class Lexem {
     }
 
     /**
+     * le o caractere e remove do array de palavras lidas
+     */
+    private read(): string {
+        try {
+            const c = this._words.shift();
+            this._lookahead++;
+            return c;
+        } catch (e) {
+            this._lookahead = -1;
+            return null;
+        }
+    }
+
+    /**
      * retorna o próximo token encontrado
      */
     public next(): Token {
@@ -101,12 +115,10 @@ export class Lexem {
 
             try {
 
-                this._lookahead = !!this._words[this._lookahead] ? this._lookahead++ : -1;
+                c = this.read();
 
-                if (this._lookahead !== this._eof) {
-                    c = this._words[this._lookahead];
+                if (this._lookahead !== this._eof)
                     this._col++;
-                }
 
             } catch (e) {
                 throw e;
