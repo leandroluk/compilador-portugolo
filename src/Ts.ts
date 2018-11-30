@@ -43,6 +43,7 @@ export class Ts {
         for (let i in this._ts) {
             if (this._ts[i].lexem.toLowerCase() === lexem.toLowerCase()) {
                 token = this._ts[i];
+                token.lexem = lexem;
             }
         }
 

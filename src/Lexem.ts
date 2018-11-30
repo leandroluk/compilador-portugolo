@@ -9,7 +9,7 @@ import { Tag } from './tag';
 export class Lexem {
 
     private _eof: number = -1;
-    private _lookahead: number = 0;
+    private _lookahead: number = -1;
     private _row: number = 1;
     private _col: number = 1;
     private _words: string[] = null;
@@ -38,7 +38,7 @@ export class Lexem {
         let error = new Error(
             `[Erro léxico ${this._errors.length + 1}: ` +
             `Símbolo encontrado: "${word}" na linha ${row} e coluna ${col}. ` +
-            `Símbolo esperado: "${expect}"`
+            `Símbolo esperado: "${expect}"]`
         );
 
         // armazena na lista de erros
@@ -60,12 +60,9 @@ export class Lexem {
     private checkLinebreak(word: string): boolean {
 
         if (['\n', '\r'].indexOf(word) > -1) {
-
-            this._row++;
             this._col = 1;
-
+            this._row++;
             return true;
-
         }
 
         return false;
@@ -89,14 +86,14 @@ export class Lexem {
     /**
      * le o caractere e remove do array de palavras lidas
      */
-    private read(): string {
+    private read(): number {
         try {
-            const c = this._words.shift();
-            this._lookahead++;
-            return c;
+            if (this._words[this._lookahead + 1])
+                this._lookahead++;
         } catch (e) {
             this._lookahead = -1;
-            return null;
+        } finally {
+            return this._lookahead;
         }
     }
 
@@ -115,10 +112,12 @@ export class Lexem {
 
             try {
 
-                c = this.read();
+                this._lookahead = this.read();
 
-                if (this._lookahead !== this._eof)
+                if (this._lookahead !== this._eof) {
+                    c = this._words[this._lookahead];
                     this._col++;
+                }
 
             } catch (e) {
                 throw e;
@@ -129,70 +128,63 @@ export class Lexem {
                     // caso seja fim de arquivo
                     if (this._lookahead === this._eof) {
                         return new Token(Tag.EOF, "EOF", this._row, this._col);
-                    } else if ([' ', '\t', '\n', '\r'].indexOf(c) > -1) {
-                        // se for uma tabulação, adiciona 3 colunas
-                        if (!this.checkLinebreak(c))
-                            this._col += 3;
-                        // senão for tabulação, fica no estado 0
+                    } else if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+                        if (!this.checkLinebreak(c)) {
+                            if (c === '\t') {
+                                this._col += 3;
+                            }
+                        }
                     }
                     // q0
-                    else if (c === '+') {
+                    else if (c === '+')
                         return new Token(Tag.OP_PLUS, '+', this._row, this._col);
-                    }
                     // q1
-                    else if (c === '-') {
+                    else if (c === '-')
                         return new Token(Tag.OP_MINUS, '+', this._row, this._col);
-                    }
                     // q2
-                    else if (c === '*') {
+                    else if (c === '*')
                         return new Token(Tag.OP_MULT, '*', this._row, this._col);
-                    }
                     // q4
-                    else if (c === '/') {
+                    else if (c === '/')
                         state = 4;
-                    }
                     // q11
                     else if (/[a-zA-Z]/.test(c)) {
-                        state = 11; word += c;
+                        word += c;
+                        state = 11;
                     }
                     // q13
                     else if (/[0-9]/.test(c)) {
-                        state = 13; word += c;
+                        word += c;
+                        state = 13;
                     }
                     // q18
                     else if (c === '"') {
-                        state = 18; word += c;
+                        word += c;
+                        state = 18;
                     }
                     // q21
-                    else if (c === ';') {
+                    else if (c === ';')
                         return new Token(Tag.SB_PVIRG, ';', this._row, this._col);
-                    }
                     // q22
-                    else if (c === ',') {
+                    else if (c === ',')
                         return new Token(Tag.SB_VIRG, ',', this._row, this._col);
-                    }
                     // q23
-                    else if (c === ')') {
+                    else if (c === ')')
                         return new Token(Tag.SB_FP, ')', this._row, this._col);
-                    }
                     // q24
-                    else if (c === '(') {
+                    else if (c === '(')
                         return new Token(Tag.SB_AP, '(', this._row, this._col);
-                    }
                     // q25
-                    else if (c === '=') {
+                    else if (c === '=')
                         return new Token(Tag.OP_EQ, '=', this._row, this._col);
-                    }
                     // q26
-                    else if (c === '>') {
+                    else if (c === '>')
                         state = 26;
-                    }
                     // q29
-                    else if (c === '<') {
+                    else if (c === '<')
                         state = 29;
-                    } else {
+                    else
                         this.catchError(c, '', +this._row, this._col);
-                    }
                     break;
                 case 4:
                     // q6
@@ -271,7 +263,7 @@ export class Lexem {
                         state = 0;
                         this.lookABack();
 
-                        let token: Token = this._ts.get(word.toUpperCase());
+                        let token: Token = this._ts.get(word);
 
                         if (!token) {
                             return new Token(Tag.ID, word, this._row, this._col);
@@ -285,7 +277,7 @@ export class Lexem {
                 case 13:
                     if (/[0-9]/.test(c)) {
                         word += c;
-                    } else if (c == '.') {
+                    } else if (c === '.') {
                         state = 15;
                         word += c;
                     } else {
@@ -295,11 +287,12 @@ export class Lexem {
                     }
                     break;
                 case 15:
-                    if (/^[0-9]/.test(c) && this._errors.length === 0) {
-                        //q15 q16
-                        this.catchError(c, 'Numerico', this._row, this._col);
+                    //q15 q16
+                    if (!/[0-9]/.test(c)) {
+                        if (this._errors.length === 0) {
+                            this.catchError(c, 'NUMERICO', this._row, this._col);
+                        }
                         this.checkLinebreak(c);
-
                     }
                     //q17
                     else {
@@ -319,7 +312,9 @@ export class Lexem {
                             word += c;
                             state = 0;
                             this._errors = [];
-                            return new Token(Tag.LITERAL, word, this._row, this._col);
+                            let token = new Token(Tag.LITERAL, word, this._row, this._col);
+                            token.lexem = word;
+                            return token;
                         }
                     } else if (this._lookahead === this._eof) {
                         this.catchError('$', ' ' + '"' + ' ', this._row, this._col);
@@ -327,7 +322,7 @@ export class Lexem {
                     } else if (/^[\x00-\x7F]/.test(c)) {
                         this.checkLinebreak(c);
                         word += c;
-                        this._errors.push(new Error('esse caracter não pe ASCII'));
+                        this._errors.push(new Error('esse caracter não é ASCII'));
                     }
                     break;
                 case 26:
@@ -360,7 +355,7 @@ export class Lexem {
                     //q34
                     if (c === '-') {
                         this._errors = [];
-                        return new Token(Tag.OP_ARTIB, "<--", this._row, this._col);
+                        return new Token(Tag.OP_ATRIB, "<--", this._row, this._col);
                     } else {
                         if (this._errors.length === 0) {
                             this.catchError(c, ' - ', this._row, this._col);

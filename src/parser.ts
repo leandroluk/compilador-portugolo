@@ -6,12 +6,11 @@ export class Parser {
 
     private readonly _lexem: Lexem;
     private _token: Token;
-    private _errors: Error[];
+    private _errors: Error[] = [];
 
     constructor(lexem: Lexem) {
         this._lexem = lexem;
-        this._token = this._lexem.next();
-        this._errors = []
+        this.next();
     }
 
     /**
@@ -19,6 +18,7 @@ export class Parser {
      */
     public next(): void {
         this._token = this._lexem.next();
+        console.log(this._token.toString());
     }
 
     /**
@@ -52,12 +52,15 @@ export class Parser {
      */
     public handleError(message: string): void {
         if (this._errors.length < 3) {
-            console.warn(
+            const err = new Error(
                 `[Erro sintático ${this._errors.length + 1}]\t` +
                 `linha: ${this._token.row}, ` +
-                `coluna: ${this._token.col}`
-            )
-            console.error(message)
+                `coluna: ${this._token.col}\n` +
+                `${message}`
+            );
+            this._errors.push(err);
+
+            console.error(err.message)
         }
         else {
             throw new Error(
@@ -501,7 +504,7 @@ export class Parser {
      * Cmd => CmdAtrib | CmdChamaRotina
      */
     public CmdLinha(): void {
-        if (this.isTag(Tag.OP_ARTIB))
+        if (this.isTag(Tag.OP_ATRIB))
             this.CmdAtrib();
         else if (this.isTag(Tag.SB_AP))
             this.CmdChamaRotina();
@@ -717,9 +720,9 @@ export class Parser {
      * CmdAtrib => "<--" Expressao ";"
      */
     public CmdAtrib(): void {
-        if (this.isTag(Tag.OP_ARTIB)) {
+        if (this.isTag(Tag.OP_ATRIB)) {
 
-            this.eat(Tag.OP_ARTIB);
+            this.eat(Tag.OP_ATRIB);
 
             this.Expressao();
 
