@@ -3,28 +3,31 @@ import { Lexem } from './lexem';
 
 const file = 
 `AlGoritmo 
+DECLARE
+LITERAL time1 , time2;
+NUMERICO gol1,gol2;
 
-	DECLARE
-	LITERAL op , a;
-	NUMERICO s;
+gol1 <-- 0;
+gol2 <-- 0;
 
-	s <-- 5.5;
-	escreva("s + a");
+time1 <-- "Cruzeiro";
+time2 <-- "Atlético";
 
-	leia(op);
+se(gol1>gol2) inicio
+	escreva("O Cruzeiro é o campeão do Mineiro");
+fim 
 
-	se(op=os) inicio
-		escreva("Oi, eu sou o Goku! );
-	fim 
-	senao inicio 
-		escreva("Seu inseto, achei que iria preferir o Kakaroto");
-	fim
+senao inicio 
+	escreva("O Atlético é o campeão do Mineiro");
+fim
+fim algoritmo
 
-	fim algoritmo
-
-	subrotina fazNada(v1 nulo)
-	escreva("Se a rotina faz nada, por que tem um comando de impressao?");
-	fim subrotina`;
+subrotina gol(g nulo)
+DECLARE
+NUMERICO gol;
+gol <-- gol + 1;
+escreva(gol);
+fim subrotina`;
 
 const lexem = new Lexem(file);
 const parser = new Parser(lexem);
